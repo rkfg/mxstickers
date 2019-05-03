@@ -47,14 +47,20 @@ Preferences::~Preferences()
 
 void Preferences::open()
 {
-    m_access_token_page->setAccessToken(m_settings->value("matrix/access_token").toString());
+    m_settings->beginGroup("matrix");
+    m_access_token_page->setAccessToken(m_settings->value("access_token").toString());
+    m_access_token_page->setServer(m_settings->value("server").toString());
+    m_settings->endGroup();
     m_rooms_editor_page->setRooms(loadRooms());
     QDialog::open();
 }
 
 void Preferences::accept()
 {
-    m_settings->setValue("matrix/access_token", m_access_token_page->accessToken());
+    m_settings->beginGroup("matrix");
+    m_settings->setValue("access_token", m_access_token_page->accessToken());
+    m_settings->setValue("server", m_access_token_page->server());
+    m_settings->endGroup();
     saveRooms(m_rooms_editor_page->rooms());
     QDialog::accept();
     emit settingsUpdated();

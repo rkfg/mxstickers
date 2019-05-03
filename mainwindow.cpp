@@ -1,14 +1,14 @@
 #include "mainwindow.h"
+#include "itemutil.h"
 #include "ui_mainwindow.h"
-#include <QDebug>
 #include <QDesktopWidget>
 #include <QDirIterator>
+#include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
 #include <QMessageBox>
 #include <QNetworkReply>
-#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -18,9 +18,8 @@ MainWindow::MainWindow(QWidget* parent)
     , m_preferences_dialog(new Preferences(m_settings, this))
 {
     ui->setupUi(this);
-    ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Код" });
+    ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    connect(ui->tableWidget, &QTableWidget::itemSelectionChanged, this, &MainWindow::selectionChanged);
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
     connect(m_network, &QNetworkAccessManager::finished, this, &MainWindow::finished);
     connect(ui->cb_stickerpack, &QComboBox::currentTextChanged, this, &MainWindow::packChanged);
@@ -37,14 +36,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::selectionChanged()
-{
-    auto sel = ui->tableWidget->selectedItems();
-    if (!sel.empty()) {
-        qDebug() << sel[0]->data(Qt::DisplayRole).toString();
-    }
-}
-
 void MainWindow::send()
 {
     auto room = ui->cb_rooms->currentData();
@@ -57,7 +48,17 @@ void MainWindow::send()
         QMessageBox::critical(this, "Ошибка", "Выберите стикер для отправки");
         return;
     }
-    auto sticker_text = sel[0]->data(Qt::DisplayRole).toString();
+    auto access_token = m_settings->value("matrix/access_token").toString();
+    if (access_token.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Задайте токен доступа в настройках");
+        return;
+    }
+    auto server = m_settings->value("matrix/server").toString();
+    if (server.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Задайте сервер Matrix в настройках");
+        return;
+    }
+    auto sticker_text = getItemText(sel[0]);
     sticker_text = QInputDialog::getText(this, "Текст стикера", "Введите текст стикера", QLineEdit::Normal, sticker_text);
     if (sticker_text.isNull()) {
         return;
@@ -71,11 +72,10 @@ void MainWindow::send()
         w = w * pic->width() / pic->height();
     }
     QJsonObject info { { "mimetype", "image/png" }, { "w", w }, { "h", h } };
-    QJsonObject content({ { "body", sticker_text }, { "url", "mxc://matrix.org/" + sel[1]->data(Qt::DisplayRole).toString() }, { "info", info } });
+    QJsonObject content({ { "body", sticker_text }, { "url", QString("mxc://%1/%2").arg(getItemText(sel[1])).arg(getItemText(sel[2])) }, { "info", info } });
     QString event_id = QString("$%1%2:matrix.org").arg(time(NULL)).arg(rand());
     auto encodedJson = QJsonDocument(content).toJson(QJsonDocument::Compact);
-    qDebug().noquote() << encodedJson;
-    QNetworkRequest req(QString("https://%1/_matrix/client/r0/rooms/%2/send/m.sticker/%3?access_token=%4").arg("behind.computer").arg(room.toString()).arg(event_id).arg(m_settings->value("matrix/access_token").toString()));
+    QNetworkRequest req(QString("https://%1/_matrix/client/r0/rooms/%2/send/m.sticker/%3?access_token=%4").arg(server).arg(room.toString()).arg(event_id).arg(access_token));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     m_network->put(req, encodedJson);
 }
@@ -101,30 +101,36 @@ void MainWindow::packChanged(const QString& text)
     ui->tableWidget->setRowCount(0);
     for (auto& d : QDir("packs/" + text).entryInfoList(QDir::NoDotAndDotDot | QDir::Files)) {
         auto mxc = d.completeBaseName();
-        insertRow({ m_settings->value("names/" + mxc).toString(), mxc, d.filePath() });
+        auto s = mxc.split('_');
+        if (s.length() == 2) {
+            insertRow(d.filePath(), m_settings->value("names/" + s[1]).toString(), s[0], s[1]);
+        }
     }
     ui->tableWidget->resizeRowsToContents();
 }
 
 void MainWindow::stickerRenamed(QTableWidgetItem* item)
 {
-    auto text = item->data(Qt::DisplayRole);
-    m_settings->setValue("names/" + ui->tableWidget->item(item->row(), 2)->data(Qt::DisplayRole).toString(), text);
+    auto text = getItemText(item);
+    m_settings->setValue("names/" + getItemText(ui->tableWidget->item(item->row(), 3)), text);
 }
 
-void MainWindow::insertRow(QList<QString> items)
+void MainWindow::insertRow(const QString& image_path, const QString& description, const QString& server, const QString& code)
 {
     ui->tableWidget->blockSignals(true); // don't want to trigger editing signal
     int idx = ui->tableWidget->rowCount();
     ui->tableWidget->insertRow(idx);
-    ui->tableWidget->setItem(idx, 1, new QTableWidgetItem(items[0]));
-    auto mxc = new QTableWidgetItem(items[1]);
-    mxc->setFlags(mxc->flags() & ~Qt::ItemIsEditable);
-    ui->tableWidget->setItem(idx, 2, mxc);
     auto icon = new QLabel();
-    icon->setPixmap(QPixmap(items[2]).scaled(128, 128, Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation));
+    icon->setPixmap(QPixmap(image_path).scaled(128, 128, Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation));
     icon->setAlignment(Qt::AlignCenter);
     ui->tableWidget->setCellWidget(idx, 0, icon);
+    ui->tableWidget->setItem(idx, 1, new QTableWidgetItem(description));
+    auto mxc_server = new QTableWidgetItem(server);
+    mxc_server->setFlags(mxc_server->flags() & ~Qt::ItemIsEditable);
+    ui->tableWidget->setItem(idx, 2, mxc_server);
+    auto mxc_code = new QTableWidgetItem(code);
+    mxc_code->setFlags(mxc_code->flags() & ~Qt::ItemIsEditable);
+    ui->tableWidget->setItem(idx, 3, mxc_code);
     ui->tableWidget->blockSignals(false);
 }
 

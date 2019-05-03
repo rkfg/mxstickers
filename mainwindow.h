@@ -19,7 +19,6 @@ public:
  explicit MainWindow(QWidget *parent = nullptr);
  ~MainWindow();
 private slots:
- void selectionChanged();
  void send();
  void finished(QNetworkReply *reply);
  void packChanged(const QString& text);
@@ -29,7 +28,7 @@ private:
  QNetworkAccessManager* m_network;
  QSettings* m_settings;
  Preferences* m_preferences_dialog;
- void insertRow(QList<QString> items);
+ void insertRow(const QString& image_path, const QString& description, const QString& server, const QString& code);
  void listPacks();
  void listRooms();
 };

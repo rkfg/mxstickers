@@ -15,7 +15,17 @@ void AccessTokenPage::setAccessToken(const QString& access_token)
 
 QString AccessTokenPage::accessToken() const
 {
-	return ui->pte_access_token->toPlainText();
+    return ui->pte_access_token->toPlainText();
+}
+
+void AccessTokenPage::setServer(const QString &server)
+{
+    ui->le_server->setText(server);
+}
+
+QString AccessTokenPage::server() const
+{
+    return ui->le_server->text();
 }
 
 AccessTokenPage::~AccessTokenPage()

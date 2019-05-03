@@ -1,4 +1,5 @@
 #include "roomseditorpage.h"
+#include "itemutil.h"
 #include "ui_roomseditorpage.h"
 #include <QMessageBox>
 
@@ -37,14 +38,7 @@ QList<Room> RoomsEditorPage::rooms() const
     QList<Room> result;
     for (int i = 0; i < ui->tw_rooms->rowCount(); ++i) {
         if (ui->tw_rooms->item(i, 0) && ui->tw_rooms->item(i, 1)) {
-            result.append({ ui->tw_rooms
-                                ->item(i, 1)
-                                ->data(Qt::DisplayRole)
-                                .toString(),
-                ui->tw_rooms
-                    ->item(i, 0)
-                    ->data(Qt::DisplayRole)
-                    .toString() });
+            result.append({ getItemText(ui->tw_rooms->item(i, 1)), getItemText(ui->tw_rooms->item(i, 0)) });
         }
     }
     return result;

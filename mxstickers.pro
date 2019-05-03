@@ -35,7 +35,8 @@ HEADERS += \
         mainwindow.h \
     preferences.h \
     accesstokenpage.h \
-    roomseditorpage.h
+    roomseditorpage.h \
+    itemutil.h
 
 FORMS += \
         mainwindow.ui \

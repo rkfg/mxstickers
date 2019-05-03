@@ -16,6 +16,8 @@ public:
  explicit AccessTokenPage(QWidget *parent = nullptr);
  void setAccessToken(const QString& access_token);
  QString accessToken() const;
+ void setServer(const QString& server);
+ QString server() const;
  ~AccessTokenPage();
 
 private:
