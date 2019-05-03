@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_preferences_dialog(new Preferences(m_settings, this))
 {
     ui->setupUi(this);
-    ui->tableWidget->setHorizontalHeaderLabels({ "Название", "Код", "Изображение" });
+    ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Код" });
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     connect(ui->tableWidget, &QTableWidget::itemSelectionChanged, this, &MainWindow::selectionChanged);
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
@@ -64,7 +64,7 @@ void MainWindow::send()
     }
     int w = 256;
     int h = 256;
-    auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(sel[0]->row(), 2))->pixmap();
+    auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(sel[0]->row(), 0))->pixmap();
     if (pic->width() > pic->height()) {
         h = h * pic->height() / pic->width();
     } else {
@@ -109,7 +109,7 @@ void MainWindow::packChanged(const QString& text)
 void MainWindow::stickerRenamed(QTableWidgetItem* item)
 {
     auto text = item->data(Qt::DisplayRole);
-    m_settings->setValue("names/" + ui->tableWidget->item(item->row(), 1)->data(Qt::DisplayRole).toString(), text);
+    m_settings->setValue("names/" + ui->tableWidget->item(item->row(), 2)->data(Qt::DisplayRole).toString(), text);
 }
 
 void MainWindow::insertRow(QList<QString> items)
@@ -117,14 +117,14 @@ void MainWindow::insertRow(QList<QString> items)
     ui->tableWidget->blockSignals(true); // don't want to trigger editing signal
     int idx = ui->tableWidget->rowCount();
     ui->tableWidget->insertRow(idx);
-    ui->tableWidget->setItem(idx, 0, new QTableWidgetItem(items[0]));
+    ui->tableWidget->setItem(idx, 1, new QTableWidgetItem(items[0]));
     auto mxc = new QTableWidgetItem(items[1]);
     mxc->setFlags(mxc->flags() & ~Qt::ItemIsEditable);
-    ui->tableWidget->setItem(idx, 1, mxc);
+    ui->tableWidget->setItem(idx, 2, mxc);
     auto icon = new QLabel();
     icon->setPixmap(QPixmap(items[2]).scaled(128, 128, Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation));
     icon->setAlignment(Qt::AlignCenter);
-    ui->tableWidget->setCellWidget(idx, 2, icon);
+    ui->tableWidget->setCellWidget(idx, 0, icon);
     ui->tableWidget->blockSignals(false);
 }
 
