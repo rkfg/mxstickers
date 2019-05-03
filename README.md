@@ -28,3 +28,7 @@ cd mxstickers
 qmake
 make
 ```
+3. Запустите полученный бинарный файл
+```
+./mxstickers
+```
