@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QNetworkReply>
+#include <time.h>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
