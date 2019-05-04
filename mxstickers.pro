@@ -25,24 +25,24 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
-        main.cpp \
-        mainwindow.cpp \
-    preferences.cpp \
-    accesstokenpage.cpp \
-    roomseditorpage.cpp
+        src/main.cpp \
+        src/mainwindow.cpp \
+    src/preferences.cpp \
+    src/accesstokenpage.cpp \
+    src/roomseditorpage.cpp
 
 HEADERS += \
-        mainwindow.h \
-    preferences.h \
-    accesstokenpage.h \
-    roomseditorpage.h \
-    itemutil.h
+        src/mainwindow.h \
+    src/preferences.h \
+    src/accesstokenpage.h \
+    src/roomseditorpage.h \
+    src/itemutil.h
 
 FORMS += \
-        mainwindow.ui \
-    preferences.ui \
-    accesstokenpage.ui \
-    roomseditorpage.ui
+        ui/mainwindow.ui \
+    ui/preferences.ui \
+    ui/accesstokenpage.ui \
+    ui/roomseditorpage.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -50,4 +50,4 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 RESOURCES += \
-    resources.qrc
+    res/resources.qrc
