@@ -1,11 +1,13 @@
 #include "mainwindow.h"
 #include "itemutil.h"
 #include "ui_mainwindow.h"
+#include <QAction>
 #include <QDesktopWidget>
 #include <QDirIterator>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QMessageBox>
 #include <QNetworkReply>
@@ -27,9 +29,25 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::stickerRenamed);
     connect(ui->b_preferences, &QPushButton::clicked, m_preferences_dialog, &QDialog::open);
     connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::listRooms);
+    connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
+    ui->le_filter->setClearButtonEnabled(true);
     listPacks();
     listRooms();
+    ui->le_filter->installEventFilter(this);
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
+        auto key = static_cast<QKeyEvent*>(event)->key();
+        switch (key) {
+        case Qt::Key_Escape:
+            ui->le_filter->clear();
+            return true;
+        }
+    }
+    return false;
 }
 
 MainWindow::~MainWindow()
@@ -147,5 +165,13 @@ void MainWindow::listRooms()
     ui->cb_rooms->clear();
     for (auto& r : m_preferences_dialog->loadRooms()) {
         ui->cb_rooms->addItem(r.name, r.address);
+    }
+}
+
+void MainWindow::filterStickers()
+{
+    auto filter = ui->le_filter->text().toLower();
+    for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
+        ui->tableWidget->setRowHidden(i, !filter.isEmpty() && !getItemText(ui->tableWidget->item(i, 1)).toLower().contains(filter));
     }
 }
