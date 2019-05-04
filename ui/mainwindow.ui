@@ -15,33 +15,7 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="2" colspan="2">
-     <widget class="QComboBox" name="cb_stickerpack"/>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLabel" name="l_pack">
-      <property name="text">
-       <string>Стикерпак</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="2" colspan="2">
-     <widget class="QLineEdit" name="le_filter"/>
-    </item>
-    <item row="3" column="1">
-     <widget class="QLabel" name="l_room">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string>Комната</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="4" colspan="2">
+    <item row="3" column="7">
      <widget class="QPushButton" name="b_send">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -58,7 +32,78 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="5">
+    <item row="1" column="1">
+     <widget class="QLabel" name="l_filter">
+      <property name="text">
+       <string>Поиск</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1" colspan="7">
+     <widget class="QTableWidget" name="tableWidget">
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="columnCount">
+       <number>4</number>
+      </property>
+      <attribute name="verticalHeaderVisible">
+       <bool>false</bool>
+      </attribute>
+      <column/>
+      <column/>
+      <column/>
+      <column/>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLabel" name="l_room">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Комната</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2" colspan="2">
+     <widget class="QComboBox" name="cb_stickerpack"/>
+    </item>
+    <item row="0" column="4">
+     <widget class="QPushButton" name="b_create_pack">
+      <property name="text">
+       <string>Создать</string>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/list-add.png</normaloff>:/res/icons/list-add.png</iconset>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="2" colspan="5">
+     <widget class="QComboBox" name="cb_rooms">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLabel" name="l_pack">
+      <property name="text">
+       <string>Стикерпак</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="7">
      <widget class="QPushButton" name="b_preferences">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -78,42 +123,19 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="2" colspan="2">
-     <widget class="QComboBox" name="cb_rooms">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLabel" name="l_filter">
+    <item row="0" column="5">
+     <widget class="QPushButton" name="b_remove_pack">
       <property name="text">
-       <string>Поиск</string>
+       <string>Удалить</string>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/list-remove.png</normaloff>:/res/icons/list-remove.png</iconset>
       </property>
      </widget>
     </item>
-    <item row="2" column="1" colspan="5">
-     <widget class="QTableWidget" name="tableWidget">
-      <property name="selectionMode">
-       <enum>QAbstractItemView::SingleSelection</enum>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
-      </property>
-      <property name="columnCount">
-       <number>4</number>
-      </property>
-      <attribute name="verticalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
-      <column/>
-      <column/>
-      <column/>
-      <column/>
-     </widget>
+    <item row="1" column="2" colspan="4">
+     <widget class="QLineEdit" name="le_filter"/>
     </item>
    </layout>
   </widget>

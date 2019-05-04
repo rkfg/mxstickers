@@ -32,6 +32,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->b_preferences, &QPushButton::clicked, m_preferences_dialog, &QDialog::open);
     connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::listRooms);
     connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
+    connect(ui->b_create_pack, &QPushButton::clicked, this, &MainWindow::createPack);
+    connect(ui->b_remove_pack, &QPushButton::clicked, this, &MainWindow::removePack);
     ui->le_filter->setClearButtonEnabled(true);
     auto clear_action = new QAction();
     clear_action->setShortcut(QKeySequence(Qt::Key_Escape));
@@ -199,6 +201,7 @@ void MainWindow::insertRow(const QString& image_path, const QString& description
 
 void MainWindow::listPacks()
 {
+    ui->cb_stickerpack->clear();
     for (auto& d : QDir("packs").entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
         ui->cb_stickerpack->addItem(d);
     }
@@ -265,4 +268,38 @@ QString MainWindow::buildRequest(const QString& method, const QString& type)
         return QString();
     }
     return QString("https://%1/_matrix/%2/r0/%3?access_token=%4").arg(server).arg(type).arg(method).arg(access_token);
+}
+
+void MainWindow::createPack()
+{
+    auto newpack = QInputDialog::getText(this, "Новый стикерпак", "Введите название нового стикерпака");
+    if (newpack.isEmpty()) {
+        return;
+    }
+    if (newpack.contains('/') || newpack.contains('\\')) {
+        QMessageBox::critical(this, "Ошибка", "Неверное имя стикерпака.");
+        return;
+    }
+    if (!QDir("packs").mkpath(newpack)) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось создать стикерпак.");
+        return;
+    }
+    listPacks();
+    ui->cb_stickerpack->setCurrentText(newpack);
+}
+
+void MainWindow::removePack()
+{
+    auto pack = ui->cb_stickerpack->currentText();
+    if (pack.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Выберите стикерпак для удаления");
+    }
+    if (QMessageBox::question(this, "Удаление стикерпака", "ВНИМАНИЕ! Все стикеры в этом стикерпаке будут также удалены! Удалить этот стикерпак?") != QMessageBox::Yes) {
+        return;
+    }
+    if (!QDir("packs/" + pack).removeRecursively()) {
+        QMessageBox::critical(this, "Ошибка", "Не удалось удалить стикерпак.");
+        return;
+    }
+    listPacks();
 }

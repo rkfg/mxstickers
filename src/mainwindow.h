@@ -39,6 +39,8 @@ private:
     void addSticker();
     void removeSticker();
     QString buildRequest(const QString& method, const QString& type = "client");
+    void createPack();
+    void removePack();
 };
 
 #endif // MAINWINDOW_H
