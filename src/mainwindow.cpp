@@ -26,6 +26,10 @@ MainWindow::MainWindow(QWidget* parent)
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    auto action = new QAction;
+    action->setShortcuts({ { "Ctrl+Shift+Return" }, { "Ctrl+Return" } });
+    connect(action, &QAction::triggered, this, &MainWindow::send);
+    ui->b_send->addAction(action);
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
     connect(ui->cb_stickerpack, &QComboBox::currentTextChanged, this, &MainWindow::packChanged);
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::stickerRenamed);
@@ -105,9 +109,12 @@ void MainWindow::send()
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     auto sticker_text = getItemText(sel[0]);
-    sticker_text = QInputDialog::getText(this, "Текст стикера", "Введите текст стикера", QLineEdit::Normal, sticker_text);
-    if (sticker_text.isNull()) {
-        return;
+    if (QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+        bool ok;
+        sticker_text = QInputDialog::getText(this, "Текст стикера", "Введите текст стикера", QLineEdit::Normal, sticker_text, &ok);
+        if (!ok) {
+            return;
+        }
     }
     int w = 256;
     int h = 256;
