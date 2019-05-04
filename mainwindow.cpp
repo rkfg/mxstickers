@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_preferences_dialog(new Preferences(m_settings, this))
 {
     ui->setupUi(this);
+    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
@@ -30,24 +31,13 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->b_preferences, &QPushButton::clicked, m_preferences_dialog, &QDialog::open);
     connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::listRooms);
     connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
-    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
     ui->le_filter->setClearButtonEnabled(true);
+    auto clear_action = new QAction();
+    clear_action->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(clear_action, &QAction::triggered, ui->le_filter, &QLineEdit::clear);
+    ui->le_filter->addAction(clear_action);
     listPacks();
     listRooms();
-    ui->le_filter->installEventFilter(this);
-}
-
-bool MainWindow::eventFilter(QObject* watched, QEvent* event)
-{
-    if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
-        auto key = static_cast<QKeyEvent*>(event)->key();
-        switch (key) {
-        case Qt::Key_Escape:
-            ui->le_filter->clear();
-            return true;
-        }
-    }
-    return false;
 }
 
 MainWindow::~MainWindow()
