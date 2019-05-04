@@ -4,6 +4,7 @@
 #include <QAction>
 #include <QDesktopWidget>
 #include <QDirIterator>
+#include <QFileDialog>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -19,13 +20,13 @@ MainWindow::MainWindow(QWidget* parent)
     , m_network(new QNetworkAccessManager(this))
     , m_settings(new QSettings("rkfg", "mxstickers", this))
     , m_preferences_dialog(new Preferences(m_settings, this))
+    , m_sticker_context_menu(new QMenu(this))
 {
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
-    connect(m_network, &QNetworkAccessManager::finished, this, &MainWindow::finished);
     connect(ui->cb_stickerpack, &QComboBox::currentTextChanged, this, &MainWindow::packChanged);
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::stickerRenamed);
     connect(ui->b_preferences, &QPushButton::clicked, m_preferences_dialog, &QDialog::open);
@@ -34,10 +35,47 @@ MainWindow::MainWindow(QWidget* parent)
     ui->le_filter->setClearButtonEnabled(true);
     auto clear_action = new QAction();
     clear_action->setShortcut(QKeySequence(Qt::Key_Escape));
-    connect(clear_action, &QAction::triggered, ui->le_filter, &QLineEdit::clear);
+    connect(clear_action, &QAction::triggered, [=] {
+        ui->le_filter->clear();
+        ui->le_filter->setFocus();
+    });
     ui->le_filter->addAction(clear_action);
     listPacks();
     listRooms();
+    m_sticker_context_menu->addAction(QIcon(":/res/icons/list-add.png"), "Добавить стикер", this, &MainWindow::addSticker);
+    m_sticker_context_menu->addAction(QIcon(":/res/icons/list-remove.png"), "Удалить стикер", this, &MainWindow::removeSticker);
+    ui->tableWidget->installEventFilter(this);
+    ui->le_filter->installEventFilter(this);
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == ui->tableWidget && event->type() == QEvent::ContextMenu) {
+        m_sticker_context_menu->exec(static_cast<QContextMenuEvent*>(event)->globalPos());
+        return true;
+    }
+    if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
+        auto key = static_cast<QKeyEvent*>(event)->key();
+        if (key == Qt::Key_Down) {
+            ui->tableWidget->setFocus();
+            for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
+                if (!ui->tableWidget->isRowHidden(i)) {
+                    ui->tableWidget->selectRow(i);
+                    break;
+                }
+            }
+        }
+        if (key == Qt::Key_Up) {
+            ui->tableWidget->setFocus();
+            for (int i = ui->tableWidget->rowCount() - 1; i >= 0; --i) {
+                if (!ui->tableWidget->isRowHidden(i)) {
+                    ui->tableWidget->selectRow(i);
+                    break;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 MainWindow::~MainWindow()
@@ -57,16 +95,13 @@ void MainWindow::send()
         QMessageBox::critical(this, "Ошибка", "Выберите стикер для отправки");
         return;
     }
-    auto access_token = m_settings->value("matrix/access_token").toString();
-    if (access_token.isEmpty()) {
-        QMessageBox::critical(this, "Ошибка", "Задайте токен доступа в настройках");
+    QString event_id = QString("$%1%2:matrix.org").arg(time(NULL)).arg(rand());
+    auto url = buildRequest(QString("rooms/%1/send/m.sticker/%2").arg(room.toString()).arg(event_id));
+    if (url.isEmpty()) {
         return;
     }
-    auto server = m_settings->value("matrix/server").toString();
-    if (server.isEmpty()) {
-        QMessageBox::critical(this, "Ошибка", "Задайте сервер Matrix в настройках");
-        return;
-    }
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     auto sticker_text = getItemText(sel[0]);
     sticker_text = QInputDialog::getText(this, "Текст стикера", "Введите текст стикера", QLineEdit::Normal, sticker_text);
     if (sticker_text.isNull()) {
@@ -82,15 +117,13 @@ void MainWindow::send()
     }
     QJsonObject info { { "mimetype", "image/png" }, { "w", w }, { "h", h } };
     QJsonObject content({ { "body", sticker_text }, { "url", QString("mxc://%1/%2").arg(getItemText(sel[1])).arg(getItemText(sel[2])) }, { "info", info } });
-    QString event_id = QString("$%1%2:matrix.org").arg(time(NULL)).arg(rand());
     auto encodedJson = QJsonDocument(content).toJson(QJsonDocument::Compact);
-    QNetworkRequest req(QString("https://%1/_matrix/client/r0/rooms/%2/send/m.sticker/%3?access_token=%4").arg(server).arg(room.toString()).arg(event_id).arg(access_token));
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    m_network->put(req, encodedJson);
+    connect(m_network->put(req, encodedJson), &QNetworkReply::finished, this, &MainWindow::sendFinished);
 }
 
-void MainWindow::finished(QNetworkReply* reply)
+void MainWindow::sendFinished()
 {
+    auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
     if (reply->error() != QNetworkReply::NoError) {
         QMessageBox::critical(this, "Ошибка", QString("Сетевая ошибка при отправке стикера %1").arg(reply->errorString()));
         return;
@@ -103,6 +136,27 @@ void MainWindow::finished(QNetworkReply* reply)
         QMessageBox::critical(this, "Ошибка", "Неверный ответ сервера: " + replyData);
     }
     reply->deleteLater();
+}
+
+void MainWindow::uploadFinished()
+{
+    auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
+    if (reply->error() != QNetworkReply::NoError) {
+        QMessageBox::critical(this, "Ошибка", QString("Сетевая ошибка при загрузке стикера %1").arg(reply->errorString()));
+        return;
+    }
+    QJsonObject result = QJsonDocument::fromJson(reply->readAll()).object();
+    if (result.contains("content_uri")) {
+        auto mxc = result["content_uri"].toString();
+        qDebug() << "Content uri" << mxc;
+        auto mxc_parts = mxc.mid(6).split("/");
+        auto filename = reply->request().attribute(QNetworkRequest::User).toString();
+        auto pack_name = reply->request().attribute(QNetworkRequest::Attribute(QNetworkRequest::User + 1)).toString();
+        QFile::copy(filename, QString("packs/%1/%2_%3.png").arg(pack_name).arg(mxc_parts[0]).arg(mxc_parts[1]));
+        if (ui->cb_stickerpack->currentText() == pack_name) {
+            emit ui->cb_stickerpack->currentTextChanged(pack_name);
+        }
+    }
 }
 
 void MainWindow::packChanged(const QString& text)
@@ -164,4 +218,51 @@ void MainWindow::filterStickers()
     for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
         ui->tableWidget->setRowHidden(i, !filter.isEmpty() && !getItemText(ui->tableWidget->item(i, 1)).toLower().contains(filter));
     }
+}
+
+void MainWindow::addSticker()
+{
+    auto stickers = QFileDialog::getOpenFileNames(this, "Выберите стикеры для добавления", QString(), "PNG (*.png)");
+    if (stickers.isEmpty()) {
+        return;
+    }
+    for (auto& f : stickers) {
+        auto url = buildRequest("upload", "media");
+        QNetworkRequest req(url);
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "image/png");
+        req.setAttribute(QNetworkRequest::User, f);
+        req.setAttribute(QNetworkRequest::Attribute(QNetworkRequest::User + 1), ui->cb_stickerpack->currentText());
+        auto file = new QFile(f);
+        file->open(QFile::ReadOnly);
+        connect(m_network->post(req, file), &QNetworkReply::finished, this, &MainWindow::uploadFinished);
+    }
+}
+
+void MainWindow::removeSticker()
+{
+    auto sel = ui->tableWidget->selectedItems();
+    if (sel.empty()) {
+        QMessageBox::critical(this, "Ошибка", "Выберите стикер для удаления");
+        return;
+    }
+    if (QMessageBox::question(this, "Подтверждение", "Удалить этот стикер?") != QMessageBox::Yes) {
+        return;
+    }
+    QFile::remove(QString("packs/%1/%2_%3.png").arg(ui->cb_stickerpack->currentText()).arg(getItemText(sel[1])).arg(getItemText(sel[2])));
+    emit ui->cb_stickerpack->currentTextChanged(ui->cb_stickerpack->currentText());
+}
+
+QString MainWindow::buildRequest(const QString& method, const QString& type)
+{
+    auto access_token = m_settings->value("matrix/access_token").toString();
+    if (access_token.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Задайте токен доступа в настройках");
+        return QString();
+    }
+    auto server = m_settings->value("matrix/server").toString();
+    if (server.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Задайте сервер Matrix в настройках");
+        return QString();
+    }
+    return QString("https://%1/_matrix/%2/r0/%3?access_token=%4").arg(server).arg(type).arg(method).arg(access_token);
 }
