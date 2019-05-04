@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
+    ui->tableWidget->hideColumn(2);
+    ui->tableWidget->hideColumn(3);
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     auto action = new QAction;
     action->setShortcuts({ { "Ctrl+Shift+Return" }, { "Ctrl+Return" } });
@@ -125,7 +127,8 @@ void MainWindow::send()
         w = w * pic->width() / pic->height();
     }
     QJsonObject info { { "mimetype", "image/png" }, { "w", w }, { "h", h } };
-    QJsonObject content({ { "body", sticker_text }, { "url", QString("mxc://%1/%2").arg(getItemText(sel[1])).arg(getItemText(sel[2])) }, { "info", info } });
+    auto server_code = getServerCode(sel[0]->row());
+    QJsonObject content({ { "body", sticker_text }, { "url", QString("mxc://%1/%2").arg(server_code[0]).arg(server_code[1]) }, { "info", info } });
     auto encodedJson = QJsonDocument(content).toJson(QJsonDocument::Compact);
     connect(m_network->put(req, encodedJson), &QNetworkReply::finished, this, &MainWindow::sendFinished);
 }
@@ -258,7 +261,8 @@ void MainWindow::removeSticker()
     if (QMessageBox::question(this, "Подтверждение", "Удалить этот стикер?") != QMessageBox::Yes) {
         return;
     }
-    QFile::remove(QString("packs/%1/%2_%3.png").arg(ui->cb_stickerpack->currentText()).arg(getItemText(sel[1])).arg(getItemText(sel[2])));
+    auto server_code = getServerCode(sel[0]->row());
+    QFile::remove(QString("packs/%1/%2_%3.png").arg(ui->cb_stickerpack->currentText()).arg(server_code[0]).arg(server_code[1]));
     emit ui->cb_stickerpack->currentTextChanged(ui->cb_stickerpack->currentText());
 }
 
@@ -309,4 +313,9 @@ void MainWindow::removePack()
         return;
     }
     listPacks();
+}
+
+QStringList MainWindow::getServerCode(int row)
+{
+    return { getItemText(ui->tableWidget->item(row, 2)), getItemText(ui->tableWidget->item(row, 3)) };
 }

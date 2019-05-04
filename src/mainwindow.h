@@ -41,6 +41,7 @@ private:
     QString buildRequest(const QString& method, const QString& type = "client");
     void createPack();
     void removePack();
+    QStringList getServerCode(int row);
 };
 
 #endif // MAINWINDOW_H
