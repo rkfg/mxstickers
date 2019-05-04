@@ -53,7 +53,7 @@
        <string>Отправить</string>
       </property>
       <property name="icon">
-       <iconset resource="resources.qrc">
+       <iconset resource="../res/resources.qrc">
         <normaloff>:/res/icons/dialog-ok-apply.png</normaloff>:/res/icons/dialog-ok-apply.png</iconset>
       </property>
      </widget>
@@ -73,7 +73,7 @@
        <string>Настройки</string>
       </property>
       <property name="icon">
-       <iconset resource="resources.qrc">
+       <iconset resource="../res/resources.qrc">
         <normaloff>:/res/icons/applications-system.png</normaloff>:/res/icons/applications-system.png</iconset>
       </property>
      </widget>
@@ -129,7 +129,7 @@
   <tabstop>b_preferences</tabstop>
  </tabstops>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../res/resources.qrc"/>
  </resources>
  <connections/>
 </ui>
