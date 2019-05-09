@@ -15,7 +15,14 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="7">
+    <item row="1" column="6">
+     <widget class="QCheckBox" name="cb_global_search">
+      <property name="text">
+       <string>По всем пакам</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="8">
      <widget class="QPushButton" name="b_preferences">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -58,7 +65,7 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="5">
+    <item row="0" column="6">
      <widget class="QPushButton" name="b_remove_pack">
       <property name="text">
        <string>Удалить</string>
@@ -69,7 +76,7 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="1" colspan="7">
+    <item row="2" column="1" colspan="8">
      <widget class="QTableWidget" name="tableWidget">
       <property name="selectionMode">
        <enum>QAbstractItemView::SingleSelection</enum>
@@ -96,18 +103,7 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="4">
-     <widget class="QPushButton" name="b_create_pack">
-      <property name="text">
-       <string>Создать</string>
-      </property>
-      <property name="icon">
-       <iconset resource="../res/resources.qrc">
-        <normaloff>:/res/icons/list-add.png</normaloff>:/res/icons/list-add.png</iconset>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="7">
+    <item row="3" column="8">
      <widget class="QPushButton" name="b_send">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -127,7 +123,18 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="2" colspan="5">
+    <item row="0" column="5">
+     <widget class="QPushButton" name="b_create_pack">
+      <property name="text">
+       <string>Создать</string>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/list-add.png</normaloff>:/res/icons/list-add.png</iconset>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="2" colspan="6">
      <widget class="QComboBox" name="cb_rooms">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -137,13 +144,23 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="2" colspan="3">
+    <item row="1" column="2" colspan="4">
      <widget class="QLineEdit" name="le_filter"/>
     </item>
-    <item row="1" column="5">
-     <widget class="QCheckBox" name="cb_global_search">
+    <item row="0" column="4">
+     <widget class="QPushButton" name="b_rename_pack">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="text">
-       <string>По всем пакам</string>
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/document-edit.png</normaloff>:/res/icons/document-edit.png</iconset>
       </property>
      </widget>
     </item>

@@ -108,6 +108,26 @@ void DBManager::removeSticker(const QString& code)
     qDebug() << "Removed" << q.record().value(0) << "stickers";
 }
 
+void DBManager::renamePack(const QString& oldname, const QString& newname)
+{
+    QSqlQuery q;
+    q.prepare("UPDATE sticker SET pack = :newname WHERE pack = :oldname");
+    q.bindValue(":oldname", oldname);
+    q.bindValue(":newname", newname);
+    q.exec();
+    qDebug() << q.record().value(0) << "stickers changed pack name";
+}
+
+void DBManager::moveStickerToPack(const QString& code, const QString& pack)
+{
+    QSqlQuery q;
+    q.prepare("UPDATE sticker SET pack = :pack WHERE code = :code");
+    q.bindValue(":pack", pack);
+    q.bindValue(":code", code);
+    q.exec();
+    qDebug() << q.record().value(0) << "stickers moved";
+}
+
 DBException::DBException(const QString& what)
     : m_what(what)
 {

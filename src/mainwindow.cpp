@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->b_create_pack, &QPushButton::clicked, this, &MainWindow::createPack);
     connect(ui->b_remove_pack, &QPushButton::clicked, this, &MainWindow::removePack);
     connect(ui->cb_global_search, &QCheckBox::clicked, this, &MainWindow::reloadStickers);
+    connect(ui->b_rename_pack, &QPushButton::clicked, this, &MainWindow::renamePack);
     ui->le_filter->setClearButtonEnabled(true);
     auto clear_action = new QAction();
     clear_action->setShortcut(QKeySequence(Qt::Key_Escape));
@@ -53,6 +54,7 @@ MainWindow::MainWindow(QWidget* parent)
     ui->le_filter->addAction(clear_action);
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-add.png"), "Добавить стикер", this, &MainWindow::addSticker);
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-remove.png"), "Удалить стикер", this, &MainWindow::removeSticker);
+    m_move_to_menu = m_sticker_context_menu->addMenu("Переместить");
     ui->tableWidget->installEventFilter(this);
     ui->le_filter->installEventFilter(this);
     init();
@@ -63,6 +65,14 @@ MainWindow::MainWindow(QWidget* parent)
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == ui->tableWidget && event->type() == QEvent::ContextMenu) {
+        m_move_to_menu->clear();
+        for (int i = 0; i < ui->cb_stickerpack->count(); ++i) {
+            if (ui->cb_stickerpack->currentIndex() != i) {
+                m_move_to_menu->addAction(ui->cb_stickerpack->itemText(i), [=, pack = ui->cb_stickerpack->itemText(i)] {
+                    moveStickerToPack(pack);
+                });
+            }
+        }
         m_sticker_context_menu->exec(static_cast<QContextMenuEvent*>(event)->globalPos());
         return true;
     }
@@ -233,6 +243,19 @@ void MainWindow::rescanPacks()
     }
 }
 
+void MainWindow::moveStickerToPack(const QString& pack)
+{
+    auto sel = ui->tableWidget->selectedItems();
+    if (sel.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Выберите стикер для перемещения.");
+        return;
+    }
+    int row = sel.first()->row();
+    m_dbmanager->moveStickerToPack(getCode(row), pack);
+    QFile(getStickerPath(row)).rename(getStickerPath(row, pack));
+    reloadStickers();
+}
+
 void MainWindow::insertRow(const Sticker& s)
 {
     ui->tableWidget->blockSignals(true); // don't want to trigger editing signal
@@ -254,9 +277,13 @@ void MainWindow::insertRow(const Sticker& s)
 
 void MainWindow::listPacks()
 {
+    int idx = ui->cb_stickerpack->currentIndex();
     ui->cb_stickerpack->clear();
     for (auto& d : QDir("packs").entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
         ui->cb_stickerpack->addItem(d);
+    }
+    if (idx > 0) {
+        ui->cb_stickerpack->setCurrentIndex(idx);
     }
 }
 
@@ -301,10 +328,17 @@ void MainWindow::removeSticker()
     if (QMessageBox::question(this, "Подтверждение", "Удалить этот стикер?") != QMessageBox::Yes) {
         return;
     }
-    auto server_code = getServerCode(sel[0]->row());
-    QFile::remove(QString("packs/%1/%2_%3.png").arg(ui->cb_stickerpack->currentText()).arg(server_code[0]).arg(server_code[1]));
-    m_dbmanager->removeSticker(server_code[1]);
-    emit ui->cb_stickerpack->currentTextChanged(ui->cb_stickerpack->currentText());
+    int row = sel.first()->row();
+    QFile::remove(getStickerPath(row));
+    m_dbmanager->removeSticker(getCode(row));
+    reloadStickers();
+}
+
+void MainWindow::validatePack(const QString& packname)
+{
+    if (packname.contains('/') || packname.contains('\\') || packname == "." || packname == "..") {
+        throw "Неверное имя стикерпака.";
+    }
 }
 
 QString MainWindow::buildRequest(const QString& method, const QString& type)
@@ -328,8 +362,10 @@ void MainWindow::createPack()
     if (newpack.isEmpty()) {
         return;
     }
-    if (newpack.contains('/') || newpack.contains('\\')) {
-        QMessageBox::critical(this, "Ошибка", "Неверное имя стикерпака.");
+    try {
+        validatePack(newpack);
+    } catch (const char* e) {
+        QMessageBox::critical(this, "Ошибка", e);
         return;
     }
     if (!QDir("packs").mkpath(newpack)) {
@@ -369,4 +405,34 @@ QString MainWindow::getServer(int row)
 QString MainWindow::getCode(int row)
 {
     return getItemText(ui->tableWidget->item(row, 3));
+}
+
+void MainWindow::renamePack()
+{
+    auto oldname = ui->cb_stickerpack->currentText();
+    auto newname = QInputDialog::getText(this, "Переименование стикерпака", "Введите новое название стикерпака", QLineEdit::Normal, oldname);
+    if (newname.isEmpty()) {
+        return;
+    }
+    try {
+        validatePack(newname);
+    } catch (const char* e) {
+        QMessageBox::critical(this, "Ошибка", e);
+        return;
+    }
+    if (QDir("packs").rename(oldname, newname)) {
+        m_dbmanager->renamePack(oldname, newname);
+    } else {
+        QMessageBox::critical(this, "Ошибка", "Ошибка переименования стикерпака. Попробуйте другое название.");
+    }
+    listPacks();
+}
+
+QString MainWindow::getStickerPath(int row, const QString& pack)
+{
+    QString curpack = pack;
+    if (curpack.isEmpty()) {
+        curpack = ui->cb_stickerpack->currentText();
+    }
+    return QString("packs/%1/%2_%3.png").arg(curpack).arg(getServer(row)).arg(getCode(row));
 }

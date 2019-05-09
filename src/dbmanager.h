@@ -32,6 +32,8 @@ public:
     void addSticker(Sticker s);
     void renameSticker(const QString& code, const QString& description);
     void removeSticker(const QString& code);
+    void renamePack(const QString& oldname, const QString& newname);
+    void moveStickerToPack(const QString& code, const QString& pack);
 private:
     QSqlDatabase m_db;
     int isExisting(const QString& code);
