@@ -22,6 +22,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_settings(new QSettings("rkfg", "mxstickers", this))
     , m_preferences_dialog(new Preferences(m_settings, this))
     , m_sticker_context_menu(new QMenu(this))
+    , m_dbmanager(new DBManager(this))
 {
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::screens().first()->availableGeometry()));
@@ -41,6 +42,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
     connect(ui->b_create_pack, &QPushButton::clicked, this, &MainWindow::createPack);
     connect(ui->b_remove_pack, &QPushButton::clicked, this, &MainWindow::removePack);
+    connect(ui->cb_global_search, &QCheckBox::clicked, this, &MainWindow::reloadStickers);
     ui->le_filter->setClearButtonEnabled(true);
     auto clear_action = new QAction();
     clear_action->setShortcut(QKeySequence(Qt::Key_Escape));
@@ -49,12 +51,13 @@ MainWindow::MainWindow(QWidget* parent)
         ui->le_filter->setFocus();
     });
     ui->le_filter->addAction(clear_action);
-    listPacks();
-    listRooms();
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-add.png"), "Добавить стикер", this, &MainWindow::addSticker);
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-remove.png"), "Удалить стикер", this, &MainWindow::removeSticker);
     ui->tableWidget->installEventFilter(this);
     ui->le_filter->installEventFilter(this);
+    init();
+    listPacks();
+    listRooms();
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
@@ -85,6 +88,18 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
         }
     }
     return false;
+}
+
+bool MainWindow::init()
+{
+    try {
+        m_dbmanager->init();
+    } catch (const DBException& e) {
+        QMessageBox::critical(this, "Ошибка", e.qwhat());
+        return false;
+    }
+    rescanPacks();
+    return true;
 }
 
 MainWindow::~MainWindow()
@@ -165,22 +180,29 @@ void MainWindow::uploadFinished()
         auto mxc_parts = mxc.mid(6).split("/");
         auto filename = reply->request().attribute(QNetworkRequest::User).toString();
         auto pack_name = reply->request().attribute(QNetworkRequest::Attribute(QNetworkRequest::User + 1)).toString();
-        QFile::copy(filename, QString("packs/%1/%2_%3.png").arg(pack_name).arg(mxc_parts[0]).arg(mxc_parts[1]));
+        QFile::copy(filename, QString("packs/%1/%2_%3.png").arg(pack_name).arg(mxc_parts[0]).arg(mxc_parts[1])); // TODO: detect image type properly
+        m_dbmanager->addSticker({ 0, "Новый стикер", mxc_parts[0], mxc_parts[1], pack_name, "png" }); // TODO: detect image type properly
         if (ui->cb_stickerpack->currentText() == pack_name) {
             emit ui->cb_stickerpack->currentTextChanged(pack_name);
         }
     }
 }
 
+void MainWindow::reloadStickers()
+{
+    packChanged(ui->cb_stickerpack->currentText());
+}
+
 void MainWindow::packChanged(const QString& text)
 {
     ui->tableWidget->setRowCount(0);
-    for (auto& d : QDir("packs/" + text).entryInfoList(QDir::NoDotAndDotDot | QDir::Files)) {
-        auto mxc = d.completeBaseName();
-        auto s = mxc.split('_');
-        if (s.length() == 2) {
-            insertRow(d.filePath(), m_settings->value("names/" + s[1]).toString(), s[0], s[1]);
+    try {
+        auto stickers = m_dbmanager->getStickers(text, ui->le_filter->text(), ui->cb_global_search->isChecked());
+        for (auto& s : stickers) {
+            insertRow(s);
         }
+    } catch (const DBException& e) {
+        qWarning() << "Не удалось загрузить стикеры: " << e.what();
     }
     ui->tableWidget->resizeRowsToContents();
 }
@@ -188,23 +210,41 @@ void MainWindow::packChanged(const QString& text)
 void MainWindow::stickerRenamed(QTableWidgetItem* item)
 {
     auto text = getItemText(item);
-    m_settings->setValue("names/" + getItemText(ui->tableWidget->item(item->row(), 3)), text);
+    m_dbmanager->renameSticker(getCode(item->row()), text);
 }
 
-void MainWindow::insertRow(const QString& image_path, const QString& description, const QString& server, const QString& code)
+void MainWindow::rescanPacks()
+{
+    for (auto& p : QDir("packs").entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs)) {
+        for (auto& d : QDir(p.filePath()).entryInfoList(QDir::NoDotAndDotDot | QDir::Files)) {
+            auto mxc = d.completeBaseName();
+            auto s = mxc.split('_');
+            if (s.length() == 2) {
+                auto desc = m_settings->value("names/" + s[1]).toString();
+                try {
+                    m_dbmanager->addSticker({ 0, desc, s[0], s[1], p.completeBaseName(), "png" });
+                } catch (const DBException& e) {
+                    qWarning() << e.qwhat();
+                }
+            }
+        }
+    }
+}
+
+void MainWindow::insertRow(const Sticker& s)
 {
     ui->tableWidget->blockSignals(true); // don't want to trigger editing signal
     int idx = ui->tableWidget->rowCount();
     ui->tableWidget->insertRow(idx);
     auto icon = new QLabel();
-    icon->setPixmap(QPixmap(image_path).scaled(128, 128, Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation));
+    icon->setPixmap(QPixmap(s.path()).scaled(128, 128, Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation));
     icon->setAlignment(Qt::AlignCenter);
     ui->tableWidget->setCellWidget(idx, 0, icon);
-    ui->tableWidget->setItem(idx, 1, new QTableWidgetItem(description));
-    auto mxc_server = new QTableWidgetItem(server);
+    ui->tableWidget->setItem(idx, 1, new QTableWidgetItem(s.description));
+    auto mxc_server = new QTableWidgetItem(s.server);
     mxc_server->setFlags(mxc_server->flags() & ~Qt::ItemIsEditable);
     ui->tableWidget->setItem(idx, 2, mxc_server);
-    auto mxc_code = new QTableWidgetItem(code);
+    auto mxc_code = new QTableWidgetItem(s.code);
     mxc_code->setFlags(mxc_code->flags() & ~Qt::ItemIsEditable);
     ui->tableWidget->setItem(idx, 3, mxc_code);
     ui->tableWidget->blockSignals(false);
@@ -228,10 +268,7 @@ void MainWindow::listRooms()
 
 void MainWindow::filterStickers()
 {
-    auto filter = ui->le_filter->text().toLower();
-    for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
-        ui->tableWidget->setRowHidden(i, !filter.isEmpty() && !getItemText(ui->tableWidget->item(i, 1)).toLower().contains(filter));
-    }
+    packChanged(ui->cb_stickerpack->currentText());
 }
 
 void MainWindow::addSticker()
@@ -264,6 +301,7 @@ void MainWindow::removeSticker()
     }
     auto server_code = getServerCode(sel[0]->row());
     QFile::remove(QString("packs/%1/%2_%3.png").arg(ui->cb_stickerpack->currentText()).arg(server_code[0]).arg(server_code[1]));
+    m_dbmanager->removeSticker(server_code[1]);
     emit ui->cb_stickerpack->currentTextChanged(ui->cb_stickerpack->currentText());
 }
 
@@ -318,5 +356,15 @@ void MainWindow::removePack()
 
 QStringList MainWindow::getServerCode(int row)
 {
-    return { getItemText(ui->tableWidget->item(row, 2)), getItemText(ui->tableWidget->item(row, 3)) };
+    return { getServer(row), getCode(row) };
+}
+
+QString MainWindow::getServer(int row)
+{
+    return getItemText(ui->tableWidget->item(row, 2));
+}
+
+QString MainWindow::getCode(int row)
+{
+    return getItemText(ui->tableWidget->item(row, 3));
 }

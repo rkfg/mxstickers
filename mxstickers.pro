@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,14 +29,16 @@ SOURCES += \
         src/mainwindow.cpp \
     src/preferences.cpp \
     src/accesstokenpage.cpp \
-    src/roomseditorpage.cpp
+    src/roomseditorpage.cpp \
+    src/dbmanager.cpp
 
 HEADERS += \
         src/mainwindow.h \
     src/preferences.h \
     src/accesstokenpage.h \
     src/roomseditorpage.h \
-    src/itemutil.h
+    src/itemutil.h \
+    src/dbmanager.h
 
 FORMS += \
         ui/mainwindow.ui \
