@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QNetworkReply>
+#include <QScreen>
 #include <time.h>
 
 MainWindow::MainWindow(QWidget* parent)
@@ -23,7 +24,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_sticker_context_menu(new QMenu(this))
 {
     ui->setupUi(this);
-    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::desktop()->availableGeometry()));
+    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::screens().first()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
     ui->tableWidget->hideColumn(2);
     ui->tableWidget->hideColumn(3);
