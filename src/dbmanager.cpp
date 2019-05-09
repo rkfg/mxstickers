@@ -93,7 +93,7 @@ void DBManager::renameSticker(const QString& code, const QString& description)
     if (!q.exec()) {
         throw DBException("Ошибка переименования стикера с кодом " + code + ": " + q.lastError().text());
     }
-    qDebug() << "Renamed" << q.record().value(0) << "stickers";
+    qDebug() << "Renamed" << q.numRowsAffected() << "stickers";
 }
 
 void DBManager::removeSticker(const QString& code)
@@ -105,7 +105,7 @@ void DBManager::removeSticker(const QString& code)
     if (!q.exec()) {
         throw DBException("Ошибка удаления стикера с кодом " + code + ": " + q.lastError().text());
     }
-    qDebug() << "Removed" << q.record().value(0) << "stickers";
+    qDebug() << "Removed" << q.numRowsAffected() << "stickers";
 }
 
 void DBManager::renamePack(const QString& oldname, const QString& newname)
@@ -115,7 +115,7 @@ void DBManager::renamePack(const QString& oldname, const QString& newname)
     q.bindValue(":oldname", oldname);
     q.bindValue(":newname", newname);
     q.exec();
-    qDebug() << q.record().value(0) << "stickers changed pack name";
+    qDebug() << q.numRowsAffected() << "stickers changed pack name";
 }
 
 void DBManager::moveStickerToPack(const QString& code, const QString& pack)
@@ -125,7 +125,7 @@ void DBManager::moveStickerToPack(const QString& code, const QString& pack)
     q.bindValue(":pack", pack);
     q.bindValue(":code", code);
     q.exec();
-    qDebug() << q.record().value(0) << "stickers moved";
+    qDebug() << q.numRowsAffected() << "stickers moved";
 }
 
 DBException::DBException(const QString& what)
