@@ -1,6 +1,7 @@
 #include "dbmanager.h"
 #include <QDebug>
 #include <QDir>
+#include <QMessageBox>
 #include <QStandardPaths>
 
 DBManager::DBManager(QObject* parent)
@@ -20,12 +21,10 @@ void DBManager::init()
         throw DBException("Не удалось открыть БД.");
     }
     QSqlQuery q;
-    if (q.exec("CREATE TABLE `sticker` ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `pack` TEXT NOT NULL, `server` TEXT NOT NULL, `code` TEXT NOT NULL, "
-               "`type` TEXT NOT NULL, `description` TEXT, `desc_index` TEXT )")) {
-        qDebug() << "Таблица стикеров создана";
-    } else {
-        qDebug() << "Ошибка при создании таблицы стикеров:" << q.lastError();
-    }
+    q.exec("CREATE TABLE `sticker` ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `pack` TEXT NOT NULL, `server` TEXT NOT NULL, `code` TEXT NOT NULL, "
+           "`type` TEXT NOT NULL, `description` TEXT, `desc_index` TEXT )");
+    q.exec("CREATE TABLE `schema_version` (`value` INTEGER NOT NULL)");
+    upgradeSchema();
 }
 
 QList<Sticker> DBManager::getStickers(const QString& pack, const QString& filter, bool global)
@@ -60,6 +59,48 @@ int DBManager::isExisting(const QString& code)
         throw DBException("Не удалось найти существующий стикер: " + q.lastError().text());
     }
     return q.record().value(0).toInt();
+}
+
+void DBManager::upgradeSchema()
+{
+    QSqlQuery q;
+    if (!q.exec("SELECT COUNT(value) FROM schema_version")) {
+        qWarning() << "Can't query schema version!";
+        return;
+    }
+    q.next();
+    if (q.record().value(0).toInt() == 0) {
+        q.exec("INSERT INTO schema_version(value) VALUES(1)");
+    }
+    if (!q.exec("SELECT value FROM schema_version")) {
+        qWarning() << "Can't query schema version!";
+        return;
+    }
+    q.next();
+    int version = q.record().value(0).toInt();
+    qDebug() << "Current DB version is" << version;
+    try {
+        while (version < 2) {
+            qInfo() << "Upgrading from" << version << "to" << version + 1;
+            switch (version) {
+            case 1:
+                if (!q.exec("ALTER TABLE sticker ADD COLUMN last_used_ts INTEGER")) {
+                    throw version;
+                }
+                break;
+            default:
+                qWarning() << "Skipping upgrade from" << version << "to" << version + 1;
+            }
+            version++;
+            q.prepare("UPDATE schema_version SET value = :v");
+            q.bindValue(":v", version);
+            if (!q.exec()) {
+                throw version - 1;
+            }
+        }
+    } catch (int v) {
+        QMessageBox::critical(0, "Ошибка", QString("Ошибка обновления БД с версии %1 до %2").arg(v).arg(v + 1));
+    }
 }
 
 void DBManager::addSticker(Sticker s)
@@ -126,6 +167,17 @@ void DBManager::moveStickerToPack(const QString& code, const QString& pack)
     q.bindValue(":code", code);
     q.exec();
     qDebug() << q.numRowsAffected() << "stickers moved";
+}
+
+void DBManager::updateRecentSticker(const QString& code)
+{
+    QSqlQuery q;
+    q.prepare("UPDATE sticker SET last_used_ts = :ts WHERE code = :code");
+    q.bindValue(":code", code);
+    q.bindValue(":ts", QDateTime::currentSecsSinceEpoch());
+    if (!q.exec()) {
+        qWarning() << "Can't update sticker TS:" << q.lastError().text();
+    }
 }
 
 DBException::DBException(const QString& what)

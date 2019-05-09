@@ -68,9 +68,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
         m_move_to_menu->clear();
         for (int i = 0; i < ui->cb_stickerpack->count(); ++i) {
             if (ui->cb_stickerpack->currentIndex() != i) {
-                m_move_to_menu->addAction(ui->cb_stickerpack->itemText(i), [=, pack = ui->cb_stickerpack->itemText(i)] {
-                    moveStickerToPack(pack);
-                });
+                m_move_to_menu->addAction(ui->cb_stickerpack->itemText(i), std::bind(&MainWindow::moveStickerToPack, this, ui->cb_stickerpack->itemText(i)));
             }
         }
         m_sticker_context_menu->exec(static_cast<QContextMenuEvent*>(event)->globalPos());
@@ -159,6 +157,7 @@ void MainWindow::send()
     QJsonObject content({ { "body", sticker_text }, { "url", sticker_url }, { "info", info } });
     auto encodedJson = QJsonDocument(content).toJson(QJsonDocument::Compact);
     connect(m_network->put(req, encodedJson), &QNetworkReply::finished, this, &MainWindow::sendFinished);
+    m_dbmanager->updateRecentSticker(server_code[1]);
 }
 
 void MainWindow::sendFinished()

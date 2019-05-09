@@ -34,9 +34,11 @@ public:
     void removeSticker(const QString& code);
     void renamePack(const QString& oldname, const QString& newname);
     void moveStickerToPack(const QString& code, const QString& pack);
+    void updateRecentSticker(const QString& code);
 private:
     QSqlDatabase m_db;
     int isExisting(const QString& code);
+    void upgradeSchema();
 };
 
 #endif // DBMANAGER_H
