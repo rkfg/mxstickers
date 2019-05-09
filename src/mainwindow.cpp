@@ -142,9 +142,11 @@ void MainWindow::send()
     } else {
         w = w * pic->width() / pic->height();
     }
-    QJsonObject info { { "mimetype", "image/png" }, { "w", w }, { "h", h } };
+    QString mimetype = "image/png";
     auto server_code = getServerCode(sel[0]->row());
-    QJsonObject content({ { "body", sticker_text }, { "url", QString("mxc://%1/%2").arg(server_code[0]).arg(server_code[1]) }, { "info", info } });
+    auto sticker_url = QString("mxc://%1/%2").arg(server_code[0]).arg(server_code[1]);
+    QJsonObject info { { "mimetype", mimetype }, { "w", w }, { "h", h }, { "size", 1 } };
+    QJsonObject content({ { "body", sticker_text }, { "url", sticker_url }, { "info", info } });
     auto encodedJson = QJsonDocument(content).toJson(QJsonDocument::Compact);
     connect(m_network->put(req, encodedJson), &QNetworkReply::finished, this, &MainWindow::sendFinished);
 }
