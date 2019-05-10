@@ -177,7 +177,7 @@ void DBManager::updateRecentSticker(const QString& code)
     QSqlQuery q;
     q.prepare("UPDATE sticker SET last_used_ts = :ts WHERE code = :code");
     q.bindValue(":code", code);
-    q.bindValue(":ts", QDateTime::currentSecsSinceEpoch());
+    q.bindValue(":ts", (qlonglong)time(NULL));
     if (!q.exec()) {
         qWarning() << "Can't update sticker TS:" << q.lastError().text();
     }
