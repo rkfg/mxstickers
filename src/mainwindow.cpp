@@ -71,10 +71,12 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
                 m_move_to_menu->addAction(ui->cb_stickerpack->itemText(i), std::bind(&MainWindow::moveStickerToPack, this, ui->cb_stickerpack->itemText(i)));
             }
         }
+        m_move_to_menu->setEnabled(ui->cb_stickerpack->currentIndex() != 0);
         m_sticker_context_menu->exec(static_cast<QContextMenuEvent*>(event)->globalPos());
         return true;
     }
     if (watched == ui->tableWidget && event->type() == QEvent::Resize) {
+        bool mini = m_mini;
         if (!m_mini) {
             m_mini = ui->tableWidget->width() < 256;
         } else {
@@ -89,6 +91,12 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
         ui->b_remove_pack->setVisible(!m_mini);
         ui->b_rename_pack->setVisible(!m_mini);
         ui->cb_global_search->setText(m_mini ? "" : "По всем пакам");
+        if (mini ^ m_mini) {
+            ui->gridLayout->addWidget(ui->cb_stickerpack, 0, m_mini ? 0 : 1, 1, m_mini ? 6 : 1);
+            ui->gridLayout->addWidget(ui->le_filter, 1, m_mini ? 0 : 1, 1, m_mini ? 5 : 1);
+            ui->gridLayout->addWidget(ui->cb_global_search, 1, m_mini ? 5 : 2, 1, m_mini ? 1 : 4);
+            ui->gridLayout->addWidget(ui->cb_rooms, 3, m_mini ? 0 : 1, 1, m_mini ? 5 : 4);
+        }
     }
     if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
         auto key = static_cast<QKeyEvent*>(event)->key();
