@@ -138,7 +138,7 @@ void MainWindow::send()
         QMessageBox::critical(this, "Ошибка", "Выберите комнату для отправки");
         return;
     }
-    auto sel = ui->tableWidget->selectedItems();
+    auto sel = ui->tableWidget->selectedRanges();
     if (sel.empty()) {
         QMessageBox::critical(this, "Ошибка", "Выберите стикер для отправки");
         return;
@@ -150,7 +150,7 @@ void MainWindow::send()
     }
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    auto sticker_text = getItemText(sel[0]);
+    auto sticker_text = getDesctiption(sel[0].topRow());
     if (QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
         bool ok;
         sticker_text = QInputDialog::getText(this, "Текст стикера", "Введите текст стикера", QLineEdit::Normal, sticker_text, &ok);
@@ -160,14 +160,14 @@ void MainWindow::send()
     }
     int w = 256;
     int h = 256;
-    auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(sel[0]->row(), 0))->pixmap();
+    auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(sel[0].topRow(), 0))->pixmap();
     if (pic->width() > pic->height()) {
         h = h * pic->height() / pic->width();
     } else {
         w = w * pic->width() / pic->height();
     }
     QString mimetype = "image/png";
-    auto server_code = getServerCode(sel[0]->row());
+    auto server_code = getServerCode(sel[0].topRow());
     auto sticker_url = QString("mxc://%1/%2").arg(server_code[0]).arg(server_code[1]);
     QJsonObject info { { "mimetype", mimetype }, { "w", w }, { "h", h }, { "size", 1 } };
     QJsonObject content({ { "body", sticker_text }, { "url", sticker_url }, { "info", info } });
@@ -265,12 +265,12 @@ void MainWindow::rescanPacks()
 
 void MainWindow::moveStickerToPack(const QString& pack)
 {
-    auto sel = ui->tableWidget->selectedItems();
+    auto sel = ui->tableWidget->selectedRanges();
     if (sel.isEmpty()) {
         QMessageBox::critical(this, "Ошибка", "Выберите стикер для перемещения.");
         return;
     }
-    int row = sel.first()->row();
+    int row = sel.first().topRow();
     m_dbmanager->moveStickerToPack(getCode(row), pack);
     QFile(getStickerPath(row)).rename(getStickerPath(row, pack));
     reloadStickers();
@@ -343,7 +343,7 @@ void MainWindow::addSticker()
 
 void MainWindow::removeSticker()
 {
-    auto sel = ui->tableWidget->selectedItems();
+    auto sel = ui->tableWidget->selectedRanges();
     if (sel.empty()) {
         QMessageBox::critical(this, "Ошибка", "Выберите стикер для удаления");
         return;
@@ -351,7 +351,7 @@ void MainWindow::removeSticker()
     if (QMessageBox::question(this, "Подтверждение", "Удалить этот стикер?") != QMessageBox::Yes) {
         return;
     }
-    int row = sel.first()->row();
+    int row = sel.first().topRow();
     QFile::remove(getStickerPath(row));
     m_dbmanager->removeSticker(getCode(row));
     reloadStickers();
@@ -428,6 +428,11 @@ QString MainWindow::getServer(int row)
 QString MainWindow::getCode(int row)
 {
     return getItemText(ui->tableWidget->item(row, 3));
+}
+
+QString MainWindow::getDesctiption(int row)
+{
+    return getItemText(ui->tableWidget->item(row, 1));
 }
 
 void MainWindow::renamePack()

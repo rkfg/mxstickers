@@ -53,6 +53,7 @@ private:
     QStringList getServerCode(int row);
     QString getServer(int row);
     QString getCode(int row);
+    QString getDesctiption(int row);
     void renamePack();
     QString getStickerPath(int row, const QString& pack = "");
 };
