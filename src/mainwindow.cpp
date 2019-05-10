@@ -66,7 +66,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == ui->tableWidget && event->type() == QEvent::ContextMenu) {
         m_move_to_menu->clear();
-        for (int i = 0; i < ui->cb_stickerpack->count(); ++i) {
+        for (int i = 2; i < ui->cb_stickerpack->count(); ++i) {
             if (ui->cb_stickerpack->currentIndex() != i) {
                 m_move_to_menu->addAction(ui->cb_stickerpack->itemText(i), std::bind(&MainWindow::moveStickerToPack, this, ui->cb_stickerpack->itemText(i)));
             }
@@ -208,7 +208,11 @@ void MainWindow::packChanged(const QString& text)
 {
     ui->tableWidget->setRowCount(0);
     try {
-        auto stickers = m_dbmanager->getStickers(text, ui->le_filter->text(), ui->cb_global_search->isChecked());
+        auto pack = text;
+        if (ui->cb_stickerpack->currentIndex() == 0) {
+            pack = "";
+        }
+        auto stickers = m_dbmanager->getStickers(pack, ui->le_filter->text(), ui->cb_global_search->isChecked());
         for (auto& s : stickers) {
             insertRow(s);
         }
@@ -278,6 +282,8 @@ void MainWindow::listPacks()
 {
     int idx = ui->cb_stickerpack->currentIndex();
     ui->cb_stickerpack->clear();
+    ui->cb_stickerpack->addItem("<Недавние>");
+    ui->cb_stickerpack->insertSeparator(1);
     for (auto& d : QDir("packs").entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
         ui->cb_stickerpack->addItem(d);
     }
@@ -335,7 +341,7 @@ void MainWindow::removeSticker()
 
 void MainWindow::validatePack(const QString& packname)
 {
-    if (packname.contains('/') || packname.contains('\\') || packname == "." || packname == "..") {
+    if (packname.contains('/') || packname.contains('\\') || packname == "." || packname == ".." || packname.startsWith("<")) {
         throw "Неверное имя стикерпака.";
     }
 }

@@ -31,11 +31,14 @@ QList<Sticker> DBManager::getStickers(const QString& pack, const QString& filter
 {
     QSqlQuery q;
     QString sql = "SELECT * FROM sticker WHERE 1=1";
-    if (filter.isEmpty() || !global) {
+    if (!pack.isEmpty() && (filter.isEmpty() || !global)) {
         sql += " AND pack = :pack";
     }
     if (!filter.isEmpty()) {
         sql += " AND desc_index LIKE :filter";
+    }
+    if (pack.isEmpty()) { // show recents
+        sql += " ORDER BY last_used_ts DESC LIMIT 5";
     }
     q.prepare(sql);
     q.bindValue(":pack", pack);
