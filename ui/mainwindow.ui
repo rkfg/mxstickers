@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>556</width>
     <height>600</height>
    </rect>
   </property>
@@ -19,26 +19,6 @@
      <widget class="QCheckBox" name="cb_global_search">
       <property name="text">
        <string>По всем пакам</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="8">
-     <widget class="QPushButton" name="b_preferences">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="toolTip">
-       <string>Настройки</string>
-      </property>
-      <property name="text">
-       <string>Настройки</string>
-      </property>
-      <property name="icon">
-       <iconset resource="../res/resources.qrc">
-        <normaloff>:/res/icons/applications-system.png</normaloff>:/res/icons/applications-system.png</iconset>
       </property>
      </widget>
     </item>
@@ -55,9 +35,6 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="2" colspan="2">
-     <widget class="QComboBox" name="cb_stickerpack"/>
-    </item>
     <item row="0" column="1">
      <widget class="QLabel" name="l_pack">
       <property name="text">
@@ -65,10 +42,72 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="6">
-     <widget class="QPushButton" name="b_remove_pack">
+    <item row="1" column="1">
+     <widget class="QLabel" name="l_filter">
       <property name="text">
+       <string>Поиск</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2" colspan="4">
+     <widget class="QLineEdit" name="le_filter"/>
+    </item>
+    <item row="0" column="2">
+     <widget class="QComboBox" name="cb_stickerpack"/>
+    </item>
+    <item row="0" column="3">
+     <widget class="QPushButton" name="b_rename_pack">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="toolTip">
+       <string>Переименовать</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/document-edit.png</normaloff>:/res/icons/document-edit.png</iconset>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="4">
+     <widget class="QPushButton" name="b_create_pack">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="toolTip">
+       <string>Создать</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/list-add.png</normaloff>:/res/icons/list-add.png</iconset>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="5">
+     <widget class="QPushButton" name="b_remove_pack">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="toolTip">
        <string>Удалить</string>
+      </property>
+      <property name="text">
+       <string/>
       </property>
       <property name="icon">
        <iconset resource="../res/resources.qrc">
@@ -76,7 +115,7 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="1" colspan="8">
+    <item row="2" column="1" colspan="6">
      <widget class="QTableWidget" name="tableWidget">
       <property name="selectionMode">
        <enum>QAbstractItemView::SingleSelection</enum>
@@ -87,6 +126,9 @@
       <property name="columnCount">
        <number>4</number>
       </property>
+      <attribute name="horizontalHeaderCascadingSectionResizes">
+       <bool>true</bool>
+      </attribute>
       <attribute name="verticalHeaderVisible">
        <bool>false</bool>
       </attribute>
@@ -96,14 +138,27 @@
       <column/>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QLabel" name="l_filter">
+    <item row="0" column="6">
+     <widget class="QPushButton" name="b_preferences">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="toolTip">
+       <string>Настройки</string>
+      </property>
       <property name="text">
-       <string>Поиск</string>
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="../res/resources.qrc">
+        <normaloff>:/res/icons/applications-system.png</normaloff>:/res/icons/applications-system.png</iconset>
       </property>
      </widget>
     </item>
-    <item row="3" column="8">
+    <item row="3" column="6">
      <widget class="QPushButton" name="b_send">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -115,7 +170,7 @@
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ctrl+Enter для отправки&lt;/p&gt;&lt;p&gt;Ctrl+Shift+Enter для отправки с другим текстом (или удерживайте Shift при нажатии на кнопку)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
       <property name="text">
-       <string>Отправить</string>
+       <string/>
       </property>
       <property name="icon">
        <iconset resource="../res/resources.qrc">
@@ -123,44 +178,13 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="5">
-     <widget class="QPushButton" name="b_create_pack">
-      <property name="text">
-       <string>Создать</string>
-      </property>
-      <property name="icon">
-       <iconset resource="../res/resources.qrc">
-        <normaloff>:/res/icons/list-add.png</normaloff>:/res/icons/list-add.png</iconset>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="2" colspan="6">
+    <item row="3" column="2" colspan="4">
      <widget class="QComboBox" name="cb_rooms">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="2" colspan="4">
-     <widget class="QLineEdit" name="le_filter"/>
-    </item>
-    <item row="0" column="4">
-     <widget class="QPushButton" name="b_rename_pack">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="icon">
-       <iconset resource="../res/resources.qrc">
-        <normaloff>:/res/icons/document-edit.png</normaloff>:/res/icons/document-edit.png</iconset>
       </property>
      </widget>
     </item>
@@ -173,9 +197,7 @@
   <tabstop>le_filter</tabstop>
   <tabstop>tableWidget</tabstop>
   <tabstop>cb_rooms</tabstop>
-  <tabstop>b_send</tabstop>
   <tabstop>cb_stickerpack</tabstop>
-  <tabstop>b_preferences</tabstop>
  </tabstops>
  <resources>
   <include location="../res/resources.qrc"/>
