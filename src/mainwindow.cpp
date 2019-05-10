@@ -74,6 +74,22 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
         m_sticker_context_menu->exec(static_cast<QContextMenuEvent*>(event)->globalPos());
         return true;
     }
+    if (watched == ui->tableWidget && event->type() == QEvent::Resize) {
+        if (!m_mini) {
+            m_mini = ui->tableWidget->width() < 256;
+        } else {
+            m_mini = ui->tableWidget->width() < 300;
+        }
+        ui->tableWidget->setColumnHidden(1, m_mini);
+        ui->l_pack->setVisible(!m_mini);
+        ui->l_room->setVisible(!m_mini);
+        ui->l_filter->setVisible(!m_mini);
+        ui->b_create_pack->setVisible(!m_mini);
+        ui->b_preferences->setVisible(!m_mini);
+        ui->b_remove_pack->setVisible(!m_mini);
+        ui->b_rename_pack->setVisible(!m_mini);
+        ui->cb_global_search->setText(m_mini ? "" : "По всем пакам");
+    }
     if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
         auto key = static_cast<QKeyEvent*>(event)->key();
         if (key == Qt::Key_Down) {
