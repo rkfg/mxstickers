@@ -226,6 +226,7 @@ void MainWindow::stickerRenamed(QTableWidgetItem* item)
 {
     auto text = getItemText(item);
     m_dbmanager->renameSticker(getCode(item->row()), text);
+    qobject_cast<QLabel*>(ui->tableWidget->cellWidget(item->row(), 0))->setToolTip(text);
 }
 
 void MainWindow::rescanPacks()
@@ -267,6 +268,7 @@ void MainWindow::insertRow(const Sticker& s)
     auto icon = new QLabel();
     icon->setPixmap(QPixmap(s.path()).scaled(128, 128, Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation));
     icon->setAlignment(Qt::AlignCenter);
+    icon->setToolTip(s.description);
     ui->tableWidget->setCellWidget(idx, 0, icon);
     ui->tableWidget->setItem(idx, 1, new QTableWidgetItem(s.description));
     auto mxc_server = new QTableWidgetItem(s.server);
