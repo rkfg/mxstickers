@@ -1,13 +1,13 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "dbmanager.h"
 #include "preferences.h"
 #include <QMainWindow>
 #include <QMenu>
 #include <QNetworkAccessManager>
 #include <QSettings>
 #include <QTableWidget>
-#include "dbmanager.h"
 
 namespace Ui {
 class MainWindow;
@@ -30,6 +30,7 @@ private slots:
     void stickerRenamed(QTableWidgetItem* item);
     void rescanPacks();
     void moveStickerToPack(const QString& pack);
+
 private:
     Ui::MainWindow* ui;
     QNetworkAccessManager* m_network;
@@ -38,13 +39,14 @@ private:
     QMenu* m_sticker_context_menu;
     QMenu* m_move_to_menu;
     DBManager* m_dbmanager;
-    void insertRow(const Sticker &s);
+    bool m_mini = false;
+    void insertRow(const Sticker& s);
     void listPacks();
     void listRooms();
     void filterStickers();
     void addSticker();
     void removeSticker();
-    void validatePack(const QString &packname);
+    void validatePack(const QString& packname);
     QString buildRequest(const QString& method, const QString& type = "client");
     void createPack();
     void removePack();
@@ -52,7 +54,7 @@ private:
     QString getServer(int row);
     QString getCode(int row);
     void renamePack();
-    QString getStickerPath(int row, const QString &pack = "");
+    QString getStickerPath(int row, const QString& pack = "");
 };
 
 #endif // MAINWINDOW_H
