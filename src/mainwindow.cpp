@@ -23,6 +23,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_preferences_dialog(new Preferences(m_settings, this))
     , m_sticker_context_menu(new QMenu(this))
     , m_dbmanager(new DBManager(this))
+    , m_tag_editor(new TagEditor(this))
 {
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::screens().first()->availableGeometry()));
@@ -55,6 +56,11 @@ MainWindow::MainWindow(QWidget* parent)
     ui->le_filter->addAction(clear_action);
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-add.png"), "Добавить стикер", this, &MainWindow::addSticker);
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-remove.png"), "Удалить стикер", this, &MainWindow::removeSticker);
+    auto edit_tag_action = new QAction(QIcon(":/res/icons/document-edit.png"), "Теги");
+    edit_tag_action->setShortcut(QKeySequence("Return"));
+    connect(edit_tag_action, &QAction::triggered, this, &MainWindow::editTags);
+    m_sticker_context_menu->addAction(edit_tag_action);
+    ui->tableWidget->addAction(edit_tag_action);
     m_move_to_menu = m_sticker_context_menu->addMenu("Переместить");
     ui->tableWidget->installEventFilter(this);
     ui->le_filter->installEventFilter(this);
@@ -486,4 +492,21 @@ QString MainWindow::getStickerPath(int row, const QString& pack)
 QString MainWindow::typeFromFilename(const QString& filename) const
 {
     return QFileInfo(filename).suffix().toLower();
+}
+
+void MainWindow::editTags()
+{
+    auto sel = ui->tableWidget->selectedRanges();
+    if (sel.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка", "Выберите стикер для редактирования тегов.");
+        return;
+    }
+    int row = sel.first().topRow();
+    auto code = getCode(row);
+    m_tag_editor->setAvailableTags(m_dbmanager->getTags(""));
+    m_tag_editor->setTags(m_dbmanager->getTags(code));
+    if (m_tag_editor->exec() != QDialog::Accepted) {
+        return;
+    }
+    m_dbmanager->setTags(code, m_tag_editor->getTags());
 }

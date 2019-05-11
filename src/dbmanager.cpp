@@ -4,6 +4,8 @@
 #include <QMessageBox>
 #include <QStandardPaths>
 
+#define CURRENT_SCHEMA_VERSION 3
+
 DBManager::DBManager(QObject* parent)
     : QObject(parent)
 {
@@ -30,19 +32,21 @@ void DBManager::init()
 QList<Sticker> DBManager::getStickers(const QString& pack, const QString& filter, bool global)
 {
     QSqlQuery q;
-    QString sql = "SELECT * FROM sticker WHERE 1=1";
+    QString sql = "SELECT * FROM sticker LEFT JOIN tag ON tag.code = sticker.code WHERE 1=1";
     if (!pack.isEmpty() && (filter.isEmpty() || !global)) {
         sql += " AND pack = :pack";
     }
     if (!filter.isEmpty()) {
-        sql += " AND desc_index LIKE :filter";
+        sql += " AND (desc_index LIKE :filter OR tag LIKE :tag)";
     }
+    sql += " GROUP BY sticker.code";
     if (pack.isEmpty()) { // show recents
         sql += " ORDER BY last_used_ts DESC LIMIT 5";
     }
     q.prepare(sql);
     q.bindValue(":pack", pack);
     q.bindValue(":filter", "%" + filter.toLower() + "%");
+    q.bindValue(":tag", filter.toLower() + "%");
     if (!q.exec()) {
         throw DBException("Не удалось получить список стикеров: " + q.lastError().text());
     }
@@ -83,11 +87,26 @@ void DBManager::upgradeSchema()
     int version = q.record().value(0).toInt();
     qDebug() << "Current DB version is" << version;
     try {
-        while (version < 2) {
+        q.exec("BEGIN TRANSACTION");
+        while (version < CURRENT_SCHEMA_VERSION) {
             qInfo() << "Upgrading from" << version << "to" << version + 1;
+            bool r = true;
             switch (version) {
             case 1:
-                if (!q.exec("ALTER TABLE sticker ADD COLUMN last_used_ts INTEGER")) {
+                r &= q.exec("ALTER TABLE sticker ADD COLUMN last_used_ts INTEGER");
+                if (!r) {
+                    throw version;
+                }
+                break;
+            case 2:
+                r &= q.exec("CREATE TABLE `tag` ( `code` TEXT NOT NULL, `tag` TEXT NOT NULL )");
+                r &= q.exec("CREATE INDEX `code_idx` ON `tag` ( `code` )");
+                r &= q.exec("CREATE INDEX `desc_idx` ON `sticker` ( `desc_index` )");
+                r &= q.exec("CREATE INDEX `last_used_idx` ON `sticker` ( `last_used_ts` )");
+                r &= q.exec("CREATE INDEX `pack_idx` ON `sticker` ( `pack` )");
+                r &= q.exec("CREATE INDEX `scode_idx` ON `sticker` ( `code` )");
+                r &= q.exec("CREATE INDEX `tag_idx` ON `tag` ( `tag` )");
+                if (!r) {
                     throw version;
                 }
                 break;
@@ -101,7 +120,9 @@ void DBManager::upgradeSchema()
                 throw version - 1;
             }
         }
+        q.exec("COMMIT");
     } catch (int v) {
+        q.exec("ROLLBACK");
         QMessageBox::critical(0, "Ошибка", QString("Ошибка обновления БД с версии %1 до %2").arg(v).arg(v + 1));
     }
 }
@@ -180,6 +201,43 @@ void DBManager::updateRecentSticker(const QString& code)
     q.bindValue(":ts", (qlonglong)time(NULL));
     if (!q.exec()) {
         qWarning() << "Can't update sticker TS:" << q.lastError().text();
+    }
+}
+
+QStringList DBManager::getTags(const QString& code)
+{
+    QStringList result;
+    QSqlQuery q;
+    QString sql = "SELECT tag FROM tag";
+    if (!code.isEmpty()) {
+        sql += " WHERE code = :code";
+    }
+    sql += " GROUP BY tag";
+    q.prepare(sql);
+    q.bindValue(":code", code);
+    if (!q.exec()) {
+        qWarning() << "Can't get tags:" << q.lastError().text();
+        return result;
+    }
+    while (q.next()) {
+        result << q.record().value(0).toString();
+    }
+    return result;
+}
+
+void DBManager::setTags(const QString& code, const QStringList& tags)
+{
+    QSqlQuery q;
+    q.prepare("DELETE FROM tag WHERE code = :code");
+    q.bindValue(":code", code);
+    if (!q.exec()) {
+        qWarning() << "Can't remove existing tags:" << q.lastError().text();
+    }
+    q.prepare("INSERT INTO tag(code, tag) VALUES(:code, :tag)");
+    q.bindValue(":code", code);
+    for (auto& t : tags) {
+        q.bindValue(":tag", t);
+        q.exec();
     }
 }
 

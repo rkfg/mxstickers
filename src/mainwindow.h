@@ -3,6 +3,7 @@
 
 #include "dbmanager.h"
 #include "preferences.h"
+#include "tageditor.h"
 #include <QMainWindow>
 #include <QMenu>
 #include <QNetworkAccessManager>
@@ -39,6 +40,7 @@ private:
     QMenu* m_sticker_context_menu;
     QMenu* m_move_to_menu;
     DBManager* m_dbmanager;
+    TagEditor* m_tag_editor;
     bool m_mini = false;
     void insertRow(const Sticker& s);
     void listPacks();
@@ -58,6 +60,7 @@ private:
     void renamePack();
     QString getStickerPath(int row, const QString& pack = "");
     QString typeFromFilename(const QString& filename) const;
+    void editTags();
 };
 
 #endif // MAINWINDOW_H

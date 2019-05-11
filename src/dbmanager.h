@@ -35,6 +35,8 @@ public:
     void renamePack(const QString& oldname, const QString& newname);
     void moveStickerToPack(const QString& code, const QString& pack);
     void updateRecentSticker(const QString& code);
+    QStringList getTags(const QString& code);
+    void setTags(const QString& code, const QStringList& tags);
 private:
     QSqlDatabase m_db;
     int isExisting(const QString& code);

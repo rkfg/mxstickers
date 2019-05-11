@@ -30,7 +30,8 @@ SOURCES += \
     src/preferences.cpp \
     src/accesstokenpage.cpp \
     src/roomseditorpage.cpp \
-    src/dbmanager.cpp
+    src/dbmanager.cpp \
+    src/tageditor.cpp
 
 HEADERS += \
         src/mainwindow.h \
@@ -38,13 +39,15 @@ HEADERS += \
     src/accesstokenpage.h \
     src/roomseditorpage.h \
     src/itemutil.h \
-    src/dbmanager.h
+    src/dbmanager.h \
+    src/tageditor.h
 
 FORMS += \
         ui/mainwindow.ui \
     ui/preferences.ui \
     ui/accesstokenpage.ui \
-    ui/roomseditorpage.ui
+    ui/roomseditorpage.ui \
+    ui/tageditor.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
