@@ -18,11 +18,6 @@ TagEditor::TagEditor(QWidget* parent)
     });
     ui->le_tag->addAction(add_tag);
     connect(ui->lw_tags, &QListWidget::itemClicked, this, &TagEditor::removeTag);
-    auto accept_action = new QAction;
-    accept_action->setShortcut(QKeySequence(
-        "Ctrl+Return"));
-    connect(accept_action, &QAction::triggered, this, &TagEditor::accept);
-    ui->buttonBox->addAction(accept_action);
     ui->lw_tags->setItemDelegate(new TagDelegate);
 }
 
@@ -58,6 +53,7 @@ TagEditor::~TagEditor()
 void TagEditor::tagAdded(const QString& tag)
 {
     if (tag.isEmpty()) {
+        accept();
         return;
     }
     auto item = new QListWidgetItem(tag.toLower());
@@ -70,6 +66,12 @@ void TagEditor::removeTag(QListWidgetItem* item)
 {
     ui->lw_tags->removeItemWidget(item);
     delete item;
+}
+
+void TagEditor::showEvent(QShowEvent *event)
+{
+    ui->le_tag->setFocus();
+    QDialog::showEvent(event);
 }
 
 void TagDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const

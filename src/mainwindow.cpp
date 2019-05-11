@@ -64,6 +64,7 @@ MainWindow::MainWindow(QWidget* parent)
     m_move_to_menu = m_sticker_context_menu->addMenu("Переместить");
     ui->tableWidget->installEventFilter(this);
     ui->le_filter->installEventFilter(this);
+    ui->le_filter->setFocus();
     init();
     listPacks();
     listRooms();

@@ -31,6 +31,10 @@ private slots:
 private:
     Ui::TagEditor* ui;
     QCompleter* m_completer;
+
+    // QWidget interface
+protected:
+    void showEvent(QShowEvent *event);
 };
 
 #endif // TAGEDITOR_H
