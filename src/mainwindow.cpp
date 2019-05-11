@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "itemutil.h"
 #include "ui_mainwindow.h"
+#include "previewfiledialog.h"
 #include <QAction>
 #include <QDesktopWidget>
 #include <QDirIterator>
@@ -73,13 +74,15 @@ MainWindow::MainWindow(QWidget* parent)
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == ui->tableWidget && event->type() == QEvent::ContextMenu) {
+        if (ui->cb_stickerpack->currentIndex() == 0) {
+            return true;
+        }
         m_move_to_menu->clear();
         for (int i = 2; i < ui->cb_stickerpack->count(); ++i) {
             if (ui->cb_stickerpack->currentIndex() != i) {
                 m_move_to_menu->addAction(ui->cb_stickerpack->itemText(i), std::bind(&MainWindow::moveStickerToPack, this, ui->cb_stickerpack->itemText(i)));
             }
         }
-        m_move_to_menu->setEnabled(ui->cb_stickerpack->currentIndex() != 0);
         m_sticker_context_menu->exec(static_cast<QContextMenuEvent*>(event)->globalPos());
         return true;
     }
@@ -344,7 +347,12 @@ void MainWindow::filterStickers()
 
 void MainWindow::addSticker()
 {
-    auto stickers = QFileDialog::getOpenFileNames(this, "Выберите стикеры для добавления", QString(), "Images (*.png *.jpg *.gif *.webp)");
+    PreviewFileDialog dlg(this, "Выберите стикеры для добавления", QString(), "Images (*.png *.jpg *.gif *.webp)", 256);
+    dlg.setFileMode(QFileDialog::ExistingFiles);
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    auto stickers = dlg.selectedFiles();
     if (stickers.isEmpty()) {
         return;
     }

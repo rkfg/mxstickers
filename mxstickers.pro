@@ -31,7 +31,8 @@ SOURCES += \
     src/accesstokenpage.cpp \
     src/roomseditorpage.cpp \
     src/dbmanager.cpp \
-    src/tageditor.cpp
+    src/tageditor.cpp \
+    src/previewfiledialog.cpp
 
 HEADERS += \
         src/mainwindow.h \
@@ -40,7 +41,8 @@ HEADERS += \
     src/roomseditorpage.h \
     src/itemutil.h \
     src/dbmanager.h \
-    src/tageditor.h
+    src/tageditor.h \
+    src/previewfiledialog.h
 
 FORMS += \
         ui/mainwindow.ui \
