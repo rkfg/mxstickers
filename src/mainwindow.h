@@ -53,9 +53,11 @@ private:
     QStringList getServerCode(int row);
     QString getServer(int row);
     QString getCode(int row);
-    QString getDesctiption(int row);
+    QString getDescription(int row);
+    QString getType(int row);
     void renamePack();
     QString getStickerPath(int row, const QString& pack = "");
+    QString typeFromFilename(const QString& filename) const;
 };
 
 #endif // MAINWINDOW_H

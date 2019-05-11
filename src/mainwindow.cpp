@@ -26,9 +26,10 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::screens().first()->availableGeometry()));
-    ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код" });
+    ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код", "Тип" });
     ui->tableWidget->hideColumn(2);
     ui->tableWidget->hideColumn(3);
+    ui->tableWidget->hideColumn(4);
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     auto action = new QAction;
     action->setShortcuts({ { "Ctrl+Shift+Return" }, { "Ctrl+Return" } });
@@ -151,6 +152,7 @@ void MainWindow::send()
         QMessageBox::critical(this, "Ошибка", "Выберите стикер для отправки");
         return;
     }
+    int row = sel[0].topRow();
     QString event_id = QString("$%1%2:matrix.org").arg(time(NULL)).arg(rand());
     auto url = buildRequest(QString("rooms/%1/send/m.sticker/%2").arg(room.toString()).arg(event_id));
     if (url.isEmpty()) {
@@ -158,7 +160,7 @@ void MainWindow::send()
     }
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    auto sticker_text = getDesctiption(sel[0].topRow());
+    auto sticker_text = getDescription(row);
     if (QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
         bool ok;
         sticker_text = QInputDialog::getText(this, "Текст стикера", "Введите текст стикера", QLineEdit::Normal, sticker_text, &ok);
@@ -168,14 +170,14 @@ void MainWindow::send()
     }
     int w = 256;
     int h = 256;
-    auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(sel[0].topRow(), 0))->pixmap();
+    auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(row, 0))->pixmap();
     if (pic->width() > pic->height()) {
         h = h * pic->height() / pic->width();
     } else {
         w = w * pic->width() / pic->height();
     }
-    QString mimetype = "image/png";
-    auto server_code = getServerCode(sel[0].topRow());
+    QString mimetype = "image/" + getType(row);
+    auto server_code = getServerCode(row);
     auto sticker_url = QString("mxc://%1/%2").arg(server_code[0]).arg(server_code[1]);
     QJsonObject info { { "mimetype", mimetype }, { "w", w }, { "h", h }, { "size", 1 } };
     QJsonObject content({ { "body", sticker_text }, { "url", sticker_url }, { "info", info } });
@@ -214,9 +216,10 @@ void MainWindow::uploadFinished()
         qDebug() << "Content uri" << mxc;
         auto mxc_parts = mxc.mid(6).split("/");
         auto filename = reply->request().attribute(QNetworkRequest::User).toString();
+        auto type = typeFromFilename(filename);
         auto pack_name = reply->request().attribute(QNetworkRequest::Attribute(QNetworkRequest::User + 1)).toString();
-        QFile::copy(filename, QString("packs/%1/%2_%3.png").arg(pack_name).arg(mxc_parts[0]).arg(mxc_parts[1])); // TODO: detect image type properly
-        m_dbmanager->addSticker({ 0, "Новый стикер", mxc_parts[0], mxc_parts[1], pack_name, "png" }); // TODO: detect image type properly
+        QFile::copy(filename, QString("packs/%1/%2_%3.%4").arg(pack_name).arg(mxc_parts[0]).arg(mxc_parts[1]).arg(type));
+        m_dbmanager->addSticker({ 0, "Новый стикер", mxc_parts[0], mxc_parts[1], pack_name, type });
         if (ui->cb_stickerpack->currentText() == pack_name) {
             emit ui->cb_stickerpack->currentTextChanged(pack_name);
         }
@@ -262,7 +265,7 @@ void MainWindow::rescanPacks()
             if (s.length() == 2) {
                 auto desc = m_settings->value("names/" + s[1]).toString();
                 try {
-                    m_dbmanager->addSticker({ 0, desc, s[0], s[1], p.completeBaseName(), "png" });
+                    m_dbmanager->addSticker({ 0, desc, s[0], s[1], p.completeBaseName(), typeFromFilename(mxc) });
                 } catch (const DBException& e) {
                     qWarning() << e.qwhat();
                 }
@@ -301,6 +304,7 @@ void MainWindow::insertRow(const Sticker& s)
     auto mxc_code = new QTableWidgetItem(s.code);
     mxc_code->setFlags(mxc_code->flags() & ~Qt::ItemIsEditable);
     ui->tableWidget->setItem(idx, 3, mxc_code);
+    ui->tableWidget->setItem(idx, 4, new QTableWidgetItem(s.type));
     ui->tableWidget->blockSignals(false);
 }
 
@@ -333,14 +337,15 @@ void MainWindow::filterStickers()
 
 void MainWindow::addSticker()
 {
-    auto stickers = QFileDialog::getOpenFileNames(this, "Выберите стикеры для добавления", QString(), "PNG (*.png)");
+    auto stickers = QFileDialog::getOpenFileNames(this, "Выберите стикеры для добавления", QString(), "Images (*.png *.jpg *.gif *.webp)");
     if (stickers.isEmpty()) {
         return;
     }
     for (auto& f : stickers) {
         auto url = buildRequest("upload", "media");
         QNetworkRequest req(url);
-        req.setHeader(QNetworkRequest::ContentTypeHeader, "image/png");
+        auto type = typeFromFilename(f);
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "image/" + type);
         req.setAttribute(QNetworkRequest::User, f);
         req.setAttribute(QNetworkRequest::Attribute(QNetworkRequest::User + 1), ui->cb_stickerpack->currentText());
         auto file = new QFile(f);
@@ -438,9 +443,14 @@ QString MainWindow::getCode(int row)
     return getItemText(ui->tableWidget->item(row, 3));
 }
 
-QString MainWindow::getDesctiption(int row)
+QString MainWindow::getDescription(int row)
 {
     return getItemText(ui->tableWidget->item(row, 1));
+}
+
+QString MainWindow::getType(int row)
+{
+    return getItemText(ui->tableWidget->item(row, 4));
 }
 
 void MainWindow::renamePack()
@@ -470,5 +480,10 @@ QString MainWindow::getStickerPath(int row, const QString& pack)
     if (curpack.isEmpty()) {
         curpack = ui->cb_stickerpack->currentText();
     }
-    return QString("packs/%1/%2_%3.png").arg(curpack).arg(getServer(row)).arg(getCode(row));
+    return QString("packs/%1/%2_%3.%4").arg(curpack).arg(getServer(row)).arg(getCode(row)).arg(getType(row));
+}
+
+QString MainWindow::typeFromFilename(const QString& filename) const
+{
+    return QFileInfo(filename).suffix().toLower();
 }
