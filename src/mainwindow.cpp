@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "itemutil.h"
-#include "ui_mainwindow.h"
 #include "previewfiledialog.h"
+#include "ui_mainwindow.h"
 #include <QAction>
 #include <QDesktopWidget>
 #include <QDirIterator>
@@ -26,6 +26,8 @@ MainWindow::MainWindow(QWidget* parent)
     , m_dbmanager(new DBManager(this))
     , m_tag_editor(new TagEditor(this))
 {
+    auto pack = m_settings->value("current_pack", "").toString();
+    auto room = m_settings->value("current_room", "").toString();
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::screens().first()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ "Изображение", "Название", "Сервер", "Код", "Тип" });
@@ -47,6 +49,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->b_remove_pack, &QPushButton::clicked, this, &MainWindow::removePack);
     connect(ui->cb_global_search, &QCheckBox::clicked, this, &MainWindow::reloadStickers);
     connect(ui->b_rename_pack, &QPushButton::clicked, this, &MainWindow::renamePack);
+    connect(ui->cb_rooms, &QComboBox::currentTextChanged, [=](const QString& text) {
+        m_settings->setValue("current_room", text);
+    });
     ui->le_filter->setClearButtonEnabled(true);
     auto clear_action = new QAction();
     clear_action->setShortcut(QKeySequence(Qt::Key_Escape));
@@ -69,6 +74,12 @@ MainWindow::MainWindow(QWidget* parent)
     init();
     listPacks();
     listRooms();
+    if (!pack.isEmpty()) {
+        ui->cb_stickerpack->setCurrentText(pack);
+    }
+    if (!room.isEmpty()) {
+        ui->cb_rooms->setCurrentText(room);
+    }
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
@@ -246,6 +257,7 @@ void MainWindow::packChanged(const QString& text)
     ui->tableWidget->setRowCount(0);
     try {
         auto pack = text;
+        m_settings->setValue("current_pack", pack);
         if (ui->cb_stickerpack->currentIndex() == 0) {
             pack = "";
         }
