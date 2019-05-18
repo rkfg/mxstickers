@@ -342,17 +342,19 @@ void MainWindow::insertRow(const Sticker& s)
     ui->tableWidget->blockSignals(false);
 }
 
-void MainWindow::listPacks()
+void MainWindow::listPacks(QString newtext)
 {
-    auto cur = ui->cb_stickerpack->currentText();
+    if (newtext.isEmpty()) {
+        newtext = ui->cb_stickerpack->currentText();
+    }
     ui->cb_stickerpack->clear();
     ui->cb_stickerpack->addItem("<Недавние>");
     ui->cb_stickerpack->insertSeparator(1);
     for (auto& d : QDir("packs").entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
         ui->cb_stickerpack->addItem(d);
     }
-    if (!cur.isEmpty()) {
-        ui->cb_stickerpack->setCurrentText(cur);
+    if (!newtext.isEmpty()) {
+        ui->cb_stickerpack->setCurrentText(newtext);
     }
 }
 
@@ -452,8 +454,7 @@ void MainWindow::createPack()
         QMessageBox::critical(this, "Ошибка", "Не удалось создать стикерпак.");
         return;
     }
-    listPacks();
-    ui->cb_stickerpack->setCurrentText(newpack);
+    listPacks(newpack);
 }
 
 void MainWindow::removePack()
@@ -521,7 +522,7 @@ void MainWindow::renamePack()
     } else {
         QMessageBox::critical(this, "Ошибка", "Ошибка переименования стикерпака. Попробуйте другое название.");
     }
-    listPacks();
+    listPacks(newname);
 }
 
 QString MainWindow::getStickerPath(int row, const QString& pack)
@@ -583,8 +584,7 @@ void MainWindow::importPack()
         auto pack = m_archive_manager->importPack(filename);
         if (!pack.isEmpty()) {
             ui->statusBar->showMessage(tr("Стикерпак '%1' успешно импортирован.").arg(pack), 5000);
-            listPacks();
-            ui->cb_stickerpack->setCurrentText(pack);
+            listPacks(pack);
         }
     } catch (const QString& e) {
         QMessageBox::critical(this, tr("Ошибка"), tr("Не удалось импортировать стикерпак: %1").arg(e));

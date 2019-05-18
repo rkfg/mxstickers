@@ -47,7 +47,7 @@ private:
     ArchiveManager* m_archive_manager;
     bool m_mini = false;
     void insertRow(const Sticker& s);
-    void listPacks();
+    void listPacks(QString newtext = "");
     void listRooms();
     void filterStickers();
     void addSticker();
