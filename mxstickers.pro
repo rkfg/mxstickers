@@ -22,7 +22,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-CONFIG += c++11
+CONFIG += c++14
 
 SOURCES += \
         src/main.cpp \
@@ -32,7 +32,10 @@ SOURCES += \
     src/roomseditorpage.cpp \
     src/dbmanager.cpp \
     src/tageditor.cpp \
-    src/previewfiledialog.cpp
+    src/previewfiledialog.cpp \
+    src/archivemanager.cpp \
+    src/zip.c \
+    src/qzip.cpp
 
 HEADERS += \
         src/mainwindow.h \
@@ -42,7 +45,11 @@ HEADERS += \
     src/itemutil.h \
     src/dbmanager.h \
     src/tageditor.h \
-    src/previewfiledialog.h
+    src/previewfiledialog.h \
+    src/archivemanager.h \
+    src/qzip.h
+    src/miniz.h
+    src/zip.h
 
 FORMS += \
         ui/mainwindow.ui \

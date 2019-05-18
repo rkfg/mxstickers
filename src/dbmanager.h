@@ -14,6 +14,15 @@ struct Sticker {
     QString path() const;
 };
 
+class Transaction {
+public:
+    ~Transaction();
+
+private:
+    friend class DBManager;
+    Transaction();
+};
+
 class DBException : public QException {
 public:
     DBException(const QString& what);
@@ -28,15 +37,19 @@ class DBManager : public QObject {
 public:
     DBManager(QObject* parent = nullptr);
     void init();
-    QList<Sticker> getStickers(const QString& pack, const QString &filter, bool global);
-    void addSticker(Sticker s);
+    QList<Sticker> getStickers(const QString& pack, const QString& filter, bool global);
+    bool addSticker(Sticker s);
     void renameSticker(const QString& code, const QString& description);
     void removeSticker(const QString& code);
+    void removePack(const QString& pack);
     void renamePack(const QString& oldname, const QString& newname);
     void moveStickerToPack(const QString& code, const QString& pack);
     void updateRecentSticker(const QString& code);
     QStringList getTags(const QString& code);
     void setTags(const QString& code, const QStringList& tags);
+    Transaction startTransaction();
+    bool packExists(const QString& pack);
+
 private:
     QSqlDatabase m_db;
     int isExisting(const QString& code);

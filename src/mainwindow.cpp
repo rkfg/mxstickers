@@ -23,8 +23,10 @@ MainWindow::MainWindow(QWidget* parent)
     , m_settings(new QSettings("rkfg", "mxstickers", this))
     , m_preferences_dialog(new Preferences(m_settings, this))
     , m_sticker_context_menu(new QMenu(this))
+    , m_pack_menu(new QMenu(this))
     , m_dbmanager(new DBManager(this))
     , m_tag_editor(new TagEditor(this))
+    , m_archive_manager(new ArchiveManager(m_dbmanager, this))
 {
     auto pack = m_settings->value("current_pack", "").toString();
     auto room = m_settings->value("current_room", "").toString();
@@ -42,15 +44,20 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
     connect(ui->cb_stickerpack, &QComboBox::currentTextChanged, this, &MainWindow::packChanged);
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::stickerRenamed);
-    connect(ui->b_preferences, &QPushButton::clicked, m_preferences_dialog, &QDialog::open);
     connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::listRooms);
     connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
-    connect(ui->b_create_pack, &QPushButton::clicked, this, &MainWindow::createPack);
-    connect(ui->b_remove_pack, &QPushButton::clicked, this, &MainWindow::removePack);
     connect(ui->cb_global_search, &QCheckBox::clicked, this, &MainWindow::reloadStickers);
-    connect(ui->b_rename_pack, &QPushButton::clicked, this, &MainWindow::renamePack);
     connect(ui->cb_rooms, &QComboBox::currentTextChanged, [=](const QString& text) {
         m_settings->setValue("current_room", text);
+    });
+    m_pack_menu->addAction(QIcon(":/res/icons/list-add.png"), "Создать стикерпак", this, &MainWindow::createPack);
+    m_pack_menu->addAction(QIcon(":/res/icons/list-remove.png"), "Удалить стикерпак", this, &MainWindow::removePack);
+    m_pack_menu->addAction(QIcon(":/res/icons/document-edit.png"), "Переименовать стикерпак", this, &MainWindow::renamePack);
+    m_pack_menu->addAction(QIcon(":/res/icons/document-import.png"), "Импортировать стикерпак", this, &MainWindow::importPack);
+    m_pack_menu->addAction(QIcon(":/res/icons/document-export.png"), "Экспортировать стикерпак", this, &MainWindow::exportPack);
+    m_pack_menu->addAction(QIcon(":/res/icons/applications-system.png"), "Настройки", m_preferences_dialog, &QDialog::open);
+    connect(ui->b_menu, &QPushButton::clicked, [=] {
+        m_pack_menu->exec(mapToGlobal(ui->b_menu->pos() + ui->b_menu->rect().bottomLeft()));
     });
     ui->le_filter->setClearButtonEnabled(true);
     auto clear_action = new QAction();
@@ -108,16 +115,13 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
         ui->l_pack->setVisible(!m_mini);
         ui->l_room->setVisible(!m_mini);
         ui->l_filter->setVisible(!m_mini);
-        ui->b_create_pack->setVisible(!m_mini);
-        ui->b_preferences->setVisible(!m_mini);
-        ui->b_remove_pack->setVisible(!m_mini);
-        ui->b_rename_pack->setVisible(!m_mini);
+        ui->b_menu->setVisible(!m_mini);
         ui->cb_global_search->setText(m_mini ? "" : "По всем пакам");
         if (mini ^ m_mini) {
-            ui->gridLayout->addWidget(ui->cb_stickerpack, 0, m_mini ? 0 : 1, 1, m_mini ? 6 : 1);
-            ui->gridLayout->addWidget(ui->le_filter, 1, m_mini ? 0 : 1, 1, m_mini ? 5 : 1);
-            ui->gridLayout->addWidget(ui->cb_global_search, 1, m_mini ? 5 : 2, 1, m_mini ? 1 : 4);
-            ui->gridLayout->addWidget(ui->cb_rooms, 3, m_mini ? 0 : 1, 1, m_mini ? 5 : 4);
+            ui->gridLayout->addWidget(ui->cb_stickerpack, 0, m_mini ? 0 : 1, 1, m_mini ? 4 : 2);
+            ui->gridLayout->addWidget(ui->le_filter, 1, m_mini ? 0 : 1, 1, m_mini ? 3 : 1);
+            ui->gridLayout->addWidget(ui->cb_global_search, 1, m_mini ? 3 : 2, 1, m_mini ? 1 : 2);
+            ui->gridLayout->addWidget(ui->cb_rooms, 3, m_mini ? 0 : 1, 1, m_mini ? 3 : 2);
         }
     }
     if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
@@ -261,6 +265,9 @@ void MainWindow::packChanged(const QString& text)
         if (ui->cb_stickerpack->currentIndex() == 0) {
             pack = "";
         }
+        m_pack_menu->actions()[1]->setEnabled(ui->cb_stickerpack->currentIndex() != 0);
+        m_pack_menu->actions()[2]->setEnabled(ui->cb_stickerpack->currentIndex() != 0);
+        m_pack_menu->actions()[4]->setEnabled(ui->cb_stickerpack->currentIndex() != 0);
         auto stickers = m_dbmanager->getStickers(pack, ui->le_filter->text(), ui->cb_global_search->isChecked());
         for (auto& s : stickers) {
             insertRow(s);
@@ -274,7 +281,12 @@ void MainWindow::packChanged(const QString& text)
 void MainWindow::stickerRenamed(QTableWidgetItem* item)
 {
     auto text = getItemText(item);
-    m_dbmanager->renameSticker(getCode(item->row()), text);
+    try {
+        m_dbmanager->renameSticker(getCode(item->row()), text);
+    } catch (const DBException& e) {
+        QMessageBox::critical(this, tr("Ошибка"), e.qwhat());
+        return;
+    }
     qobject_cast<QLabel*>(ui->tableWidget->cellWidget(item->row(), 0))->setToolTip(text);
 }
 
@@ -332,15 +344,15 @@ void MainWindow::insertRow(const Sticker& s)
 
 void MainWindow::listPacks()
 {
-    int idx = ui->cb_stickerpack->currentIndex();
+    auto cur = ui->cb_stickerpack->currentText();
     ui->cb_stickerpack->clear();
     ui->cb_stickerpack->addItem("<Недавние>");
     ui->cb_stickerpack->insertSeparator(1);
     for (auto& d : QDir("packs").entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
         ui->cb_stickerpack->addItem(d);
     }
-    if (idx > 0) {
-        ui->cb_stickerpack->setCurrentIndex(idx);
+    if (!cur.isEmpty()) {
+        ui->cb_stickerpack->setCurrentText(cur);
     }
 }
 
@@ -393,14 +405,19 @@ void MainWindow::removeSticker()
     }
     int row = sel.first().topRow();
     QFile::remove(getStickerPath(row));
-    m_dbmanager->removeSticker(getCode(row));
+    try {
+        m_dbmanager->removeSticker(getCode(row));
+    } catch (const DBException& e) {
+        QMessageBox::critical(this, tr("Ошибка"), e.qwhat());
+        return;
+    }
     reloadStickers();
 }
 
 void MainWindow::validatePack(const QString& packname)
 {
     if (packname.contains('/') || packname.contains('\\') || packname == "." || packname == ".." || packname.startsWith("<")) {
-        throw "Неверное имя стикерпака.";
+        throw tr("Неверное имя стикерпака.");
     }
 }
 
@@ -427,7 +444,7 @@ void MainWindow::createPack()
     }
     try {
         validatePack(newpack);
-    } catch (const char* e) {
+    } catch (const QString& e) {
         QMessageBox::critical(this, "Ошибка", e);
         return;
     }
@@ -446,6 +463,12 @@ void MainWindow::removePack()
         QMessageBox::critical(this, "Ошибка", "Выберите стикерпак для удаления");
     }
     if (QMessageBox::question(this, "Удаление стикерпака", "ВНИМАНИЕ! Все стикеры в этом стикерпаке будут также удалены! Удалить этот стикерпак?") != QMessageBox::Yes) {
+        return;
+    }
+    try {
+        m_dbmanager->removePack(pack);
+    } catch (const DBException& e) {
+        QMessageBox::critical(this, "Ошибка", e.qwhat());
         return;
     }
     if (!QDir("packs/" + pack).removeRecursively()) {
@@ -489,7 +512,7 @@ void MainWindow::renamePack()
     }
     try {
         validatePack(newname);
-    } catch (const char* e) {
+    } catch (const QString& e) {
         QMessageBox::critical(this, "Ошибка", e);
         return;
     }
@@ -530,4 +553,40 @@ void MainWindow::editTags()
         return;
     }
     m_dbmanager->setTags(code, m_tag_editor->getTags());
+}
+
+void MainWindow::exportPack()
+{
+    auto pack = ui->cb_stickerpack->currentText();
+    auto filename = QFileDialog::getSaveFileName(this, "Экспорт стикерпака", pack + ".zip", "Stickerpack (*.zip)");
+    if (filename.isEmpty()) {
+        return;
+    }
+    if (!filename.toLower().endsWith(".zip")) {
+        filename += ".zip";
+    }
+    try {
+        m_archive_manager->exportPack(pack, filename);
+        ui->statusBar->showMessage(tr("Стикерпак '%1' успешно экспортирован.").arg(pack), 5000);
+    } catch (const QString& e) {
+        QMessageBox::critical(this, tr("Ошибка"), tr("Не удалось экспортировать стикерпак: %1").arg(e));
+    }
+}
+
+void MainWindow::importPack()
+{
+    auto filename = QFileDialog::getOpenFileName(this, "Импорт стикерпака", QString(), "Stickerpack (*.zip)");
+    if (filename.isEmpty()) {
+        return;
+    }
+    try {
+        auto pack = m_archive_manager->importPack(filename);
+        if (!pack.isEmpty()) {
+            ui->statusBar->showMessage(tr("Стикерпак '%1' успешно импортирован.").arg(pack), 5000);
+            listPacks();
+            ui->cb_stickerpack->setCurrentText(pack);
+        }
+    } catch (const QString& e) {
+        QMessageBox::critical(this, tr("Ошибка"), tr("Не удалось импортировать стикерпак: %1").arg(e));
+    }
 }

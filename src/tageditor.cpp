@@ -3,6 +3,7 @@
 
 #include <QAction>
 #include <QDebug>
+#include <QMessageBox>
 #include <QPainter>
 
 TagEditor::TagEditor(QWidget* parent)
@@ -52,6 +53,10 @@ TagEditor::~TagEditor()
 
 void TagEditor::tagAdded(const QString& tag)
 {
+    if (tag.contains('|')) {
+        QMessageBox::critical(this, "Ошибка", "Тег не может содержать символ |.");
+        return;
+    }
     if (tag.isEmpty()) {
         accept();
         return;

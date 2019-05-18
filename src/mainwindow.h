@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "archivemanager.h"
 #include "dbmanager.h"
 #include "preferences.h"
 #include "tageditor.h"
@@ -21,6 +22,7 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     bool eventFilter(QObject* watched, QEvent* event);
     bool init();
+    static void validatePack(const QString& packname);
     ~MainWindow();
 private slots:
     void send();
@@ -38,9 +40,11 @@ private:
     QSettings* m_settings;
     Preferences* m_preferences_dialog;
     QMenu* m_sticker_context_menu;
+    QMenu* m_pack_menu;
     QMenu* m_move_to_menu;
     DBManager* m_dbmanager;
     TagEditor* m_tag_editor;
+    ArchiveManager* m_archive_manager;
     bool m_mini = false;
     void insertRow(const Sticker& s);
     void listPacks();
@@ -48,7 +52,6 @@ private:
     void filterStickers();
     void addSticker();
     void removeSticker();
-    void validatePack(const QString& packname);
     QString buildRequest(const QString& method, const QString& type = "client");
     void createPack();
     void removePack();
@@ -61,6 +64,8 @@ private:
     QString getStickerPath(int row, const QString& pack = "");
     QString typeFromFilename(const QString& filename) const;
     void editTags();
+    void exportPack();
+    void importPack();
 };
 
 #endif // MAINWINDOW_H
