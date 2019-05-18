@@ -71,6 +71,7 @@ MainWindow::MainWindow(QWidget* parent)
     m_sticker_context_menu->addAction(QIcon(":/res/icons/list-remove.png"), "Удалить стикер", this, &MainWindow::removeSticker);
     auto edit_tag_action = new QAction(QIcon(":/res/icons/document-edit.png"), "Теги");
     edit_tag_action->setShortcut(QKeySequence("Shift+Return"));
+    edit_tag_action->setShortcutVisibleInContextMenu(true);
     connect(edit_tag_action, &QAction::triggered, this, &MainWindow::editTags);
     m_sticker_context_menu->addAction(edit_tag_action);
     ui->tableWidget->addAction(edit_tag_action);
