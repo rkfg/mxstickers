@@ -7,8 +7,6 @@
 #include <QObject>
 #include <QString>
 
-using uzip = std::unique_ptr<zip_t, decltype(&zip_close)>;
-
 class ArchiveManager : public QObject {
     Q_OBJECT
 public:
@@ -20,8 +18,6 @@ private:
     QPair<QString, QString> takeLine(QStringList& lines);
     QPair<QString, QString> serverCode(const QString& key);
     DBManager* m_dbmanager;
-    auto qzip_entry_open(const uzip& zip, const char* entryname);
-    uzip qzip_open(const QString& name, int level, char mode);
 };
 
 #endif // ARCHIVEMANAGER_H
