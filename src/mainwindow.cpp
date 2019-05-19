@@ -200,8 +200,8 @@ void MainWindow::send()
     if (sticker_text.isEmpty()) {
         sticker_text = tr("Стикер");
     }
-    int w = 256;
-    int h = 256;
+    int w = 160;
+    int h = 160;
     auto pic = static_cast<QLabel*>(ui->tableWidget->cellWidget(row, 0))->pixmap();
     if (pic->width() > pic->height()) {
         h = h * pic->height() / pic->width();
