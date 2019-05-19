@@ -125,15 +125,20 @@ void DBManager::upgradeSchema()
     }
 }
 
-bool DBManager::addSticker(Sticker s)
+bool DBManager::addSticker(Sticker s, bool update)
 {
+    QSqlQuery q;
     auto found = isExisting(s.code);
     if (found > 0) {
-        qDebug() << "Стикер с кодом" << s.code << "уже есть в БД, не добавляем";
-        return false;
+        if (!update) {
+            qDebug() << "Стикер с кодом" << s.code << "уже есть в БД, не добавляем";
+            return false;
+        } else {
+            q.prepare("UPDATE sticker SET pack = :pack, description = :description, desc_index = :desc_index WHERE code = :code");
+        }
+    } else {
+        q.prepare("INSERT INTO sticker (pack, server, code, type, description, desc_index) VALUES (:pack, :server, :code, :type, :description, :desc_index)");
     }
-    QSqlQuery q;
-    q.prepare("INSERT INTO sticker (pack, server, code, type, description, desc_index) VALUES (:pack, :server, :code, :type, :description, :desc_index)");
     q.bindValue(":pack", s.pack);
     q.bindValue(":server", s.server);
     q.bindValue(":code", s.code);

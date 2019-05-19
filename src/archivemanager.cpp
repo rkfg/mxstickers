@@ -74,6 +74,8 @@ QString ArchiveManager::importPack(const QString& packname)
         }
     }
     bool result = true;
+    bool update = false;
+    bool asked = false;
     for (int i = 0; i < zip.count(); ++i) {
         auto e = zip.openEntry(i);
         auto sname = e.name();
@@ -84,7 +86,15 @@ QString ArchiveManager::importPack(const QString& packname)
             if (stickers.contains(code)) {
                 e.fread(QString("packs/%1/%2").arg(pack).arg(sname));
                 stickers[code].type = type;
-                result &= m_dbmanager->addSticker(stickers[code]);
+                auto add_result = m_dbmanager->addSticker(stickers[code], update);
+                if (!add_result && !update && !asked) {
+                    update = QMessageBox::question(nullptr, tr("Обновлять стикеры?"), tr("В импортируемом стикерпаке обнаружен дубль стикера (в импортируемом паке '%1'). Заменять уже существующие в вашей коллекции стикеры с таким кодом? ВНИМАНИЕ: ваши описания стикеров и теги будут заменены таковыми из импортируемого стикерпака.").arg(stickers[code].description)) == QMessageBox::Yes;
+                    if (update) {
+                        add_result = m_dbmanager->addSticker(stickers[code], update);
+                    }
+                    asked = true;
+                }
+                result &= add_result;
                 m_dbmanager->setTags(code, tags[code]);
             }
         }

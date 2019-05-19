@@ -38,7 +38,7 @@ public:
     DBManager(QObject* parent = nullptr);
     void init();
     QList<Sticker> getStickers(const QString& pack, const QString& filter, bool global);
-    bool addSticker(Sticker s);
+    bool addSticker(Sticker s, bool update = false);
     void renameSticker(const QString& code, const QString& description);
     void removeSticker(const QString& code);
     void removePack(const QString& pack);
