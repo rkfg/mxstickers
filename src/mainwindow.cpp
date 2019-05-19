@@ -126,6 +126,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
             ui->gridLayout->addWidget(ui->cb_global_search, 1, m_mini ? 3 : 2, 1, m_mini ? 1 : 2);
             ui->gridLayout->addWidget(ui->cb_rooms, 3, m_mini ? 0 : 1, 1, m_mini ? 3 : 2);
         }
+        return false;
     }
     if (watched == ui->le_filter && event->type() == QEvent::KeyRelease) {
         auto key = static_cast<QKeyEvent*>(event)->key();
@@ -134,7 +135,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
             for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
                 if (!ui->tableWidget->isRowHidden(i)) {
                     ui->tableWidget->selectRow(i);
-                    break;
+                    return true;
                 }
             }
         }
@@ -143,7 +144,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
             for (int i = ui->tableWidget->rowCount() - 1; i >= 0; --i) {
                 if (!ui->tableWidget->isRowHidden(i)) {
                     ui->tableWidget->selectRow(i);
-                    break;
+                    return true;
                 }
             }
         }
