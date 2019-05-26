@@ -3,6 +3,7 @@
 #include "qzip.h"
 
 #include <QInputDialog>
+#include <QJsonDocument>
 #include <QMessageBox>
 
 ArchiveManager::ArchiveManager(DBManager* db_manager, QObject* parent)
@@ -15,8 +16,10 @@ void ArchiveManager::exportPack(const QString& pack, const QString& packname)
 {
     QZip zip;
     zip.open(packname, ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
-    auto packinfo = "name=" + pack + "\nversion=1\n";
-    QByteArray b;
+    QJsonObject root;
+    root["name"] = pack;
+    root["version"] = 2;
+    QJsonArray stickers;
     for (auto& s : m_dbmanager->getStickers(pack, "", false)) {
         auto p = s.path();
         {
@@ -24,54 +27,63 @@ void ArchiveManager::exportPack(const QString& pack, const QString& packname)
             e.fwrite(p);
         }
         auto tags = m_dbmanager->getTags(s.code);
-        packinfo += QString("%1_%2_description=%3\n%1_%2_tags=%4\n").arg(s.server).arg(s.code).arg(s.description).arg(tags.join("|"));
+        QJsonObject sticker;
+        sticker["description"] = s.description;
+        sticker["code"] = s.code;
+        sticker["server"] = s.server;
+        sticker["tags"] = QJsonArray::fromStringList(tags);
+        stickers.append(sticker);
     }
-    auto e = zip.openEntry("packinfo.txt");
-    e.write(packinfo.toUtf8());
+    auto e = zip.openEntry("packinfo.json");
+    root["stickers"] = stickers;
+    QJsonDocument packinfo;
+    packinfo.setObject(root);
+    e.write(packinfo.toJson());
 }
 
 QString ArchiveManager::importPack(const QString& packname)
 {
     QZip zip;
     zip.open(packname, ZIP_DEFAULT_COMPRESSION_LEVEL, 'r');
-    auto e = zip.openEntry("packinfo.txt");
-    auto lines = QString(e.read()).split('\n');
-    if (lines.size() < 2) {
-        throw tr("неверный формат файла packinfo.txt");
+    auto e = zip.openEntry("packinfo.json");
+    auto packinfo = QJsonDocument::fromJson(e.read());
+    if (!packinfo.isObject()) {
+        throw tr("неверный формат файла packinfo.json");
     }
-    auto kv = takeLine(lines);
-    if (kv.first != "name") {
-        throw tr("неверный формат файла packinfo.txt");
+    if (packinfo["version"].toInt() != 2) {
+        throw tr("неверный формат файла packinfo.json");
     }
-    auto pack = kv.second;
+    auto pack = packinfo["name"].toString();
+    qDebug() << tr("Импорт пака '%1'").arg(pack);
     pack = QInputDialog::getText(nullptr, "Название стикерпака", "Введите название нового стикерпака", QLineEdit::Normal, pack);
     if (pack.isEmpty()) {
         return pack;
     }
     if (m_dbmanager->packExists(pack)) {
-        throw tr("стикерпак с названием %1 уже существует.").arg(pack);
+        throw tr("стикерпак с названием '%1' уже существует.").arg(pack);
     }
     MainWindow::validatePack(pack);
     if (!QDir("packs").mkpath(pack)) {
-        throw tr("ошибка создания директории стикерпака %1").arg(pack);
+        throw tr("ошибка создания директории стикерпака '%1'").arg(pack);
     }
-    kv = takeLine(lines);
-    if (kv.first != "version" || kv.second.toInt() != 1) {
-        throw tr("неверный формат файла packinfo.txt");
+    auto jstickers = packinfo["stickers"].toArray();
+    if (jstickers.isEmpty()) {
+        throw tr("не найдены стикеры в стикерпаке '%1'").arg(pack);
     }
     auto t = m_dbmanager->startTransaction();
     QMap<QString, Sticker> stickers;
     QMap<QString, QStringList> tags;
-    while (!lines.isEmpty()) {
-        kv = takeLine(lines);
-        if (kv.first.endsWith("_description")) {
-            auto server_code = serverCode(kv.first);
-            stickers[server_code.second] = { 0, kv.second, server_code.first, server_code.second, pack, "" };
+    for (int i = 0; i < jstickers.size(); ++i) {
+        auto sticker = jstickers[i].toObject();
+        auto description = sticker["description"].toString();
+        auto server = sticker["server"].toString();
+        auto code = sticker["code"].toString();
+        stickers[code] = { 0, description, server, code, pack, "" };
+        QStringList taglist;
+        for (auto tag : sticker["tags"].toArray()) {
+            taglist << tag.toString();
         }
-        if (kv.first.endsWith("_tags")) {
-            auto server_code = serverCode(kv.first);
-            tags[server_code.second] = kv.second.split('|');
-        }
+        tags[code] = taglist;
     }
     bool result = true;
     bool update = false;
@@ -79,7 +91,7 @@ QString ArchiveManager::importPack(const QString& packname)
     for (int i = 0; i < zip.count(); ++i) {
         auto e = zip.openEntry(i);
         auto sname = e.name();
-        if (sname != "packinfo.txt") {
+        if (sname != "packinfo.json") {
             QFileInfo fi(sname);
             auto code = fi.completeBaseName().split('_').last();
             auto type = fi.suffix();
@@ -103,25 +115,4 @@ QString ArchiveManager::importPack(const QString& packname)
         QMessageBox::warning(nullptr, tr("Внимание"), tr("Некоторые стикеры не были добавлены, потому что они уже присутствуют в других стикерпаках."));
     }
     return pack;
-}
-
-QPair<QString, QString> ArchiveManager::takeLine(QStringList& lines)
-{
-    auto s = lines.first().split('=');
-    auto first = s.first();
-    s.removeFirst();
-    auto second = s.join('=');
-    lines.removeFirst();
-    return { first, second };
-}
-
-QPair<QString, QString> ArchiveManager::serverCode(const QString& key)
-{
-    auto server_code = key.split('_');
-    if (server_code.size() != 3) {
-        throw tr("ошибка записи в packinfo.txt: %1").arg(key);
-    }
-    auto server = server_code[0];
-    auto code = server_code[1];
-    return { server, code };
 }

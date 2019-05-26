@@ -15,8 +15,6 @@ public:
     QString importPack(const QString& packname);
 
 private:
-    QPair<QString, QString> takeLine(QStringList& lines);
-    QPair<QString, QString> serverCode(const QString& key);
     DBManager* m_dbmanager;
 };
 
