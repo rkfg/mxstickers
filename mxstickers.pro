@@ -35,7 +35,8 @@ SOURCES += \
     src/previewfiledialog.cpp \
     src/archivemanager.cpp \
     src/zip.c \
-    src/qzip.cpp
+    src/qzip.cpp \
+    src/matrixapi.cpp
 
 HEADERS += \
         src/mainwindow.h \
@@ -47,7 +48,8 @@ HEADERS += \
     src/tageditor.h \
     src/previewfiledialog.h \
     src/archivemanager.h \
-    src/qzip.h
+    src/qzip.h \
+    src/matrixapi.h
     src/miniz.h
     src/zip.h
 

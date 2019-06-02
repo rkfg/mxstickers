@@ -5,6 +5,7 @@
 #include "dbmanager.h"
 #include "preferences.h"
 #include "tageditor.h"
+#include "matrixapi.h"
 #include <QMainWindow>
 #include <QMenu>
 #include <QNetworkAccessManager>
@@ -33,6 +34,7 @@ private slots:
     void stickerRenamed(QTableWidgetItem* item);
     void rescanPacks();
     void moveStickerToPack(const QString& pack);
+    void updateMatrixParams();
 
 private:
     Ui::MainWindow* ui;
@@ -45,6 +47,7 @@ private:
     DBManager* m_dbmanager;
     TagEditor* m_tag_editor;
     ArchiveManager* m_archive_manager;
+    MatrixAPI* m_matrix;
     bool m_mini = false;
     void insertRow(const Sticker& s);
     void listPacks(QString newtext = "");
@@ -66,6 +69,8 @@ private:
     void editTags();
     void exportPack();
     void importPack();
+    void sync(MXSync sync);
+    QList<Room> loadRooms();
 };
 
 #endif // MAINWINDOW_H

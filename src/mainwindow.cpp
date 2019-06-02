@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_dbmanager(new DBManager(this))
     , m_tag_editor(new TagEditor(this))
     , m_archive_manager(new ArchiveManager(m_dbmanager, this))
+    , m_matrix(new MatrixAPI(*m_network, this))
 {
     auto pack = m_settings->value("current_pack", "").toString();
     auto room = m_settings->value("current_room", "").toString();
@@ -44,7 +45,6 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->b_send, &QPushButton::clicked, this, &MainWindow::send);
     connect(ui->cb_stickerpack, &QComboBox::currentTextChanged, this, &MainWindow::packChanged);
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::stickerRenamed);
-    connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::listRooms);
     connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
     connect(ui->cb_global_search, &QCheckBox::clicked, this, &MainWindow::reloadStickers);
     connect(ui->cb_rooms, &QComboBox::currentTextChanged, [=](const QString& text) {
@@ -83,13 +83,17 @@ MainWindow::MainWindow(QWidget* parent)
     ui->le_filter->setFocus();
     init();
     listPacks();
-    listRooms();
     if (!pack.isEmpty()) {
         ui->cb_stickerpack->setCurrentText(pack);
     }
     if (!room.isEmpty()) {
         ui->cb_rooms->setCurrentText(room);
     }
+    updateMatrixParams();
+    connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::updateMatrixParams);
+    connect(m_matrix, &MatrixAPI::syncComplete, this, &MainWindow::sync);
+    m_matrix->m_since = m_settings->value("matrix/since").toString();
+    m_matrix->sync();
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
@@ -596,4 +600,18 @@ void MainWindow::importPack()
     } catch (const QString& e) {
         QMessageBox::critical(this, tr("Ошибка"), tr("Не удалось импортировать стикерпак: %1").arg(e));
     }
+}
+
+void MainWindow::sync(MXSync sync)
+{
+    ui->cb_rooms->clear();
+    for (auto& r : sync.rooms) {
+        ui->cb_rooms->addItem(r.title(), r.address);
+    }
+}
+
+void MainWindow::updateMatrixParams()
+{
+    m_matrix->m_server = m_settings->value("matrix/server").toString();
+    m_matrix->m_access_token = m_settings->value("matrix/access_token").toString();
 }

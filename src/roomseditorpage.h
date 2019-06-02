@@ -11,6 +11,16 @@ class RoomsEditorPage;
 struct Room {
     QString address;
     QString name;
+    QString creator;
+    QString title() const {
+        if (!name.isEmpty()) {
+            return name;
+        }
+        if (!creator.isEmpty()) {
+            return QObject::tr("Чат с %1").arg(creator);
+        }
+        return address;
+    }
 };
 
 class RoomsEditorPage : public QWidget {
