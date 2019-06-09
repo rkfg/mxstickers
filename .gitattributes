@@ -1,0 +1,3 @@
+src/zip.c linguist-vendored
+src/zip.h linguist-vendored
+src/miniz.h linguist-vendored
