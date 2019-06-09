@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Отправка стикеров [le quosteeleeque]</string>
+   <string>Custom Matrix stickers tool</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -24,35 +24,35 @@
        </sizepolicy>
       </property>
       <property name="text">
-       <string>Комната</string>
+       <string>Room</string>
       </property>
      </widget>
     </item>
     <item row="1" column="0">
      <widget class="QLabel" name="l_filter">
       <property name="text">
-       <string>Поиск</string>
+       <string>Search</string>
       </property>
      </widget>
     </item>
     <item row="0" column="0">
      <widget class="QLabel" name="l_pack">
       <property name="text">
-       <string>Стикерпак</string>
+       <string>Stickerpack</string>
       </property>
      </widget>
     </item>
     <item row="1" column="1">
      <widget class="QLineEdit" name="le_filter">
       <property name="toolTip">
-       <string>Поиск</string>
+       <string>Search</string>
       </property>
      </widget>
     </item>
     <item row="0" column="1" colspan="2">
      <widget class="QComboBox" name="cb_stickerpack">
       <property name="toolTip">
-       <string>Стикерпак</string>
+       <string>Stickerpack</string>
       </property>
      </widget>
     </item>
@@ -65,7 +65,7 @@
        </sizepolicy>
       </property>
       <property name="toolTip">
-       <string>Меню</string>
+       <string>Menu</string>
       </property>
       <property name="text">
        <string/>
@@ -85,7 +85,7 @@
        </sizepolicy>
       </property>
       <property name="toolTip">
-       <string>Комната</string>
+       <string>Room</string>
       </property>
      </widget>
     </item>
@@ -98,7 +98,7 @@
        </sizepolicy>
       </property>
       <property name="toolTip">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ctrl+Enter для отправки&lt;/p&gt;&lt;p&gt;Ctrl+Shift+Enter для отправки с другим текстом (или удерживайте Shift при нажатии на кнопку)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ctrl+Enter to send&lt;/p&gt;&lt;p&gt;Ctrl+Shift+Enter to send with custom text (or hold Shift when you click this button)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
       <property name="text">
        <string/>
@@ -142,10 +142,10 @@
        </sizepolicy>
       </property>
       <property name="toolTip">
-       <string>По всем пакам</string>
+       <string>All packs</string>
       </property>
       <property name="text">
-       <string>По всем пакам</string>
+       <string>All packs</string>
       </property>
      </widget>
     </item>

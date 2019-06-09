@@ -31,7 +31,7 @@ void MatrixAPI::sync()
 void MatrixAPI::syncRequestFinished(QNetworkReply* rep)
 {
     if (rep->error() != QNetworkReply::NoError) {
-        qWarning() << tr("Ошибка запроса matrix: %1").arg(QString::fromUtf8(rep->readAll()));
+        qWarning() << tr("Error quering Matrix: %1").arg(QString::fromUtf8(rep->readAll()));
         return;
     }
     auto root = QJsonDocument::fromJson(rep->readAll()).object();
@@ -60,11 +60,11 @@ void MatrixAPI::syncRequestFinished(QNetworkReply* rep)
 QString MatrixAPI::buildRequest(const QString& method, const QString& type)
 {
     if (m_access_token.isEmpty()) {
-        QMessageBox::critical(nullptr, tr("Ошибка"), tr("Задайте токен доступа в настройках"));
+        QMessageBox::critical(nullptr, tr("Error"), tr("Set access token in preferences"));
         return QString();
     }
     if (m_server.isEmpty()) {
-        QMessageBox::critical(nullptr, tr("Ошибка"), tr("Задайте сервер Matrix в настройках"));
+        QMessageBox::critical(nullptr, tr("Error"), tr("Set Matrix server in preferences"));
         return QString();
     }
     return QString("https://%1/_matrix/%2/r0/%3?access_token=%4").arg(m_server).arg(type).arg(method).arg(m_access_token);

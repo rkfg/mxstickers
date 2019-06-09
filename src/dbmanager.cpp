@@ -15,12 +15,12 @@ void DBManager::init()
 {
     auto path = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     if (!QDir(path).mkpath(".")) {
-        throw DBException("Не удалось создать директорию данных для приложения.");
+        throw DBException(tr("Can't create the data directory."));
     }
     m_db = QSqlDatabase::addDatabase("QSQLITE");
     m_db.setDatabaseName(path + "/mxs.db");
     if (!m_db.open()) {
-        throw DBException("Не удалось открыть БД.");
+        throw DBException(tr("Can't open the database."));
     }
     QSqlQuery q;
     q.exec("CREATE TABLE `sticker` ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `pack` TEXT NOT NULL, `server` TEXT NOT NULL, `code` TEXT NOT NULL, "
@@ -48,7 +48,7 @@ QList<Sticker> DBManager::getStickers(const QString& pack, const QString& filter
     q.bindValue(":filter", "%" + filter.toLower() + "%");
     q.bindValue(":tag", filter.toLower() + "%");
     if (!q.exec()) {
-        throw DBException(tr("Не удалось получить список стикеров: %1").arg(q.lastError().text()));
+        throw DBException(tr("Can't get the sticker list: %1").arg(q.lastError().text()));
     }
     QList<Sticker> result;
     while (q.next()) {
@@ -63,7 +63,7 @@ int DBManager::isExisting(const QString& code)
     q.prepare("SELECT COUNT(id) FROM sticker WHERE code = :code");
     q.bindValue(":code", code);
     if (!q.exec() || !q.next()) {
-        throw DBException(tr("Не удалось найти существующий стикер с кодом %1: %2").arg(code).arg(q.lastError().text()));
+        throw DBException(tr("Can't find existing sticker with code %1: %2").arg(code).arg(q.lastError().text()));
     }
     return q.record().value(0).toInt();
 }
@@ -72,7 +72,7 @@ void DBManager::upgradeSchema()
 {
     QSqlQuery q;
     if (!q.exec("SELECT COUNT(value) FROM schema_version")) {
-        qWarning() << "Can't query schema version!";
+        qWarning() << tr("Can't query schema version!");
         return;
     }
     q.next();
@@ -85,11 +85,11 @@ void DBManager::upgradeSchema()
     }
     q.next();
     int version = q.record().value(0).toInt();
-    qDebug() << "Current DB version is" << version;
+    qDebug() << tr("Current DB version is %1").arg(version);
     try {
         auto t = startTransaction();
         while (version < CURRENT_SCHEMA_VERSION) {
-            qInfo() << "Upgrading from" << version << "to" << version + 1;
+            qInfo() << tr("Upgrading from %1 to %2").arg(version).arg(version + 1);
             bool r = true;
             switch (version) {
             case 1:
@@ -111,7 +111,7 @@ void DBManager::upgradeSchema()
                 }
                 break;
             default:
-                qWarning() << "Skipping upgrade from" << version << "to" << version + 1;
+                qWarning() << tr("Skipping upgrade from %1 to %2").arg(version).arg(version + 1);
             }
             version++;
             q.prepare("UPDATE schema_version SET value = :v");
@@ -121,7 +121,7 @@ void DBManager::upgradeSchema()
             }
         }
     } catch (int v) {
-        QMessageBox::critical(0, "Ошибка", tr("Ошибка обновления БД с версии %1 до %2").arg(v).arg(v + 1));
+        QMessageBox::critical(0, tr("Error"), tr("Error updating database version from %1 to %2").arg(v).arg(v + 1));
     }
 }
 
@@ -131,7 +131,7 @@ bool DBManager::addSticker(Sticker s, bool update)
     auto found = isExisting(s.code);
     if (found > 0) {
         if (!update) {
-            qDebug() << "Стикер с кодом" << s.code << "уже есть в БД, не добавляем";
+            qDebug() << tr("Sticker with code %1 already present in the database, not adding.").arg(s.code);
             return false;
         } else {
             q.prepare("UPDATE sticker SET pack = :pack, description = :description, desc_index = :desc_index WHERE code = :code");
@@ -146,7 +146,7 @@ bool DBManager::addSticker(Sticker s, bool update)
     q.bindValue(":description", s.description);
     q.bindValue(":desc_index", s.description.toLower());
     if (!q.exec()) {
-        throw DBException(tr("Ошибка добавления стикера с кодом %1 в БД: %2").arg(s.code).arg(q.lastError().text()));
+        throw DBException(tr("Error adding sticker with code %1 to the database: %2").arg(s.code).arg(q.lastError().text()));
     }
     return true;
 }
@@ -160,9 +160,9 @@ void DBManager::renameSticker(const QString& code, const QString& description)
     q.bindValue(":desc_index", description.toLower());
     q.bindValue(":code", code);
     if (!q.exec()) {
-        throw DBException(tr("Ошибка переименования стикера с кодом %1: %2").arg(code).arg(q.lastError().text()));
+        throw DBException(tr("Error renaming sticker with code %1: %2").arg(code).arg(q.lastError().text()));
     }
-    qDebug() << "Renamed" << q.numRowsAffected() << "stickers";
+    qDebug() << tr("Renamed %1 stickers").arg(q.numRowsAffected());
 }
 
 void DBManager::removeSticker(const QString& code)
@@ -172,7 +172,7 @@ void DBManager::removeSticker(const QString& code)
     q.prepare("DELETE FROM sticker WHERE code = :code");
     q.bindValue(":code", code);
     if (!q.exec()) {
-        throw DBException(tr("Ошибка удаления стикера с кодом %1: %2").arg(code).arg(q.lastError().text()));
+        throw DBException(tr("Error deleting sticker with code %1: %2").arg(code).arg(q.lastError().text()));
     }
     qDebug() << "Removed" << q.numRowsAffected() << "stickers";
 }
@@ -184,15 +184,15 @@ void DBManager::removePack(const QString& pack)
     q.prepare("DELETE FROM tag WHERE code IN (SELECT code FROM sticker WHERE pack = :pack)");
     q.bindValue(":pack", pack);
     if (!q.exec()) {
-        throw DBException(tr("Ошибка удаления тегов из стикерпака %1: %2").arg(pack).arg(q.lastError().text()));
+        throw DBException(tr("Error removing tags from stickerpack %1: %2").arg(pack).arg(q.lastError().text()));
     }
-    qDebug() << "Removed" << q.numRowsAffected() << "tags";
+    qDebug() << tr("Removed %1 tags").arg(q.numRowsAffected());
     q.prepare("DELETE FROM sticker WHERE pack = :pack");
     q.bindValue(":pack", pack);
     if (!q.exec()) {
-        throw DBException(tr("Ошибка удаления стикерпака %1: %2").arg(pack).arg(q.lastError().text()));
+        throw DBException(tr("Error removing stickerpack %1: %2").arg(pack).arg(q.lastError().text()));
     }
-    qDebug() << "Removed" << q.numRowsAffected() << "stickerpacks";
+    qDebug() << tr("Removed %1 stickerpacks").arg(q.numRowsAffected());
 }
 
 void DBManager::renamePack(const QString& oldname, const QString& newname)
@@ -202,7 +202,7 @@ void DBManager::renamePack(const QString& oldname, const QString& newname)
     q.bindValue(":oldname", oldname);
     q.bindValue(":newname", newname);
     q.exec();
-    qDebug() << q.numRowsAffected() << "stickers changed pack name";
+    qDebug() << tr("%1 stickers changed pack name").arg(q.numRowsAffected());
 }
 
 void DBManager::moveStickerToPack(const QString& code, const QString& pack)
@@ -212,7 +212,7 @@ void DBManager::moveStickerToPack(const QString& code, const QString& pack)
     q.bindValue(":pack", pack);
     q.bindValue(":code", code);
     q.exec();
-    qDebug() << q.numRowsAffected() << "stickers moved";
+    qDebug() << tr("%1 stickers moved").arg(q.numRowsAffected());
 }
 
 void DBManager::updateRecentSticker(const QString& code)
@@ -222,7 +222,7 @@ void DBManager::updateRecentSticker(const QString& code)
     q.bindValue(":code", code);
     q.bindValue(":ts", (qlonglong)time(NULL));
     if (!q.exec()) {
-        qWarning() << "Can't update sticker TS:" << q.lastError().text();
+        qWarning() << tr("Can't update sticker TS: %1").arg(q.lastError().text());
     }
 }
 
@@ -238,7 +238,7 @@ QStringList DBManager::getTags(const QString& code)
     q.prepare(sql);
     q.bindValue(":code", code);
     if (!q.exec()) {
-        qWarning() << "Can't get tags:" << q.lastError().text();
+        qWarning() << tr("Can't get tags: %1").arg(q.lastError().text());
         return result;
     }
     while (q.next()) {
@@ -253,7 +253,7 @@ void DBManager::setTags(const QString& code, const QStringList& tags)
     q.prepare("DELETE FROM tag WHERE code = :code");
     q.bindValue(":code", code);
     if (!q.exec()) {
-        qWarning() << "Can't remove existing tags:" << q.lastError().text();
+        qWarning() << tr("Can't remove existing tags: %1").arg(q.lastError().text());
     }
     q.prepare("INSERT INTO tag(code, tag) VALUES(:code, :tag)");
     q.bindValue(":code", code);
@@ -297,7 +297,7 @@ Transaction::Transaction()
 {
     QSqlQuery q;
     q.exec("BEGIN TRANSACTION");
-    qDebug() << "Transaction started";
+    qDebug() << QObject::tr("Transaction started");
 }
 
 Transaction::~Transaction()
@@ -305,10 +305,10 @@ Transaction::~Transaction()
     if (std::uncaught_exception()) {
         QSqlQuery q;
         q.exec("ROLLBACK");
-        qDebug() << "Transaction rolled back due to exception";
+        qDebug() << QObject::tr("Transaction rolled back due to exception");
     } else {
         QSqlQuery q;
         q.exec("COMMIT");
-        qDebug() << "Transaction committed";
+        qDebug() << QObject::tr("Transaction committed");
     }
 }

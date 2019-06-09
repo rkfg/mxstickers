@@ -11,18 +11,21 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Редактор тегов</string>
+   <string>Tags editor</string>
   </property>
   <layout class="QFormLayout" name="formLayout">
    <item row="0" column="0" colspan="2">
     <widget class="QLineEdit" name="le_tag">
      <property name="placeholderText">
-      <string>Добавить тег</string>
+      <string>Add tag</string>
      </property>
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
     <widget class="QListWidget" name="lw_tags">
+     <property name="toolTip">
+      <string>Tags</string>
+     </property>
      <property name="selectionMode">
       <enum>QAbstractItemView::NoSelection</enum>
      </property>

@@ -48,27 +48,27 @@ QString ArchiveManager::importPack(const QString& packname)
     auto e = zip.openEntry("packinfo.json");
     auto packinfo = QJsonDocument::fromJson(e.read());
     if (!packinfo.isObject()) {
-        throw tr("неверный формат файла packinfo.json");
+        throw tr("invalid packinfo.json file format");
     }
     if (packinfo["version"].toInt() != 2) {
-        throw tr("неверный формат файла packinfo.json");
+        throw tr("invalid packinfo.json file format");
     }
     auto pack = packinfo["name"].toString();
-    qDebug() << tr("Импорт пака '%1'").arg(pack);
-    pack = QInputDialog::getText(nullptr, "Название стикерпака", "Введите название нового стикерпака", QLineEdit::Normal, pack);
+    qDebug() << tr("Import pack '%1'").arg(pack);
+    pack = QInputDialog::getText(nullptr, tr("Stickerpack name"), tr("Enter new stickerpack name"), QLineEdit::Normal, pack);
     if (pack.isEmpty()) {
         return pack;
     }
     if (m_dbmanager->packExists(pack)) {
-        throw tr("стикерпак с названием '%1' уже существует.").arg(pack);
+        throw tr("stickerpack named '%1' already exists.").arg(pack);
     }
     MainWindow::validatePack(pack);
     if (!QDir("packs").mkpath(pack)) {
-        throw tr("ошибка создания директории стикерпака '%1'").arg(pack);
+        throw tr("error creating stickerpack directory '%1'").arg(pack);
     }
     auto jstickers = packinfo["stickers"].toArray();
     if (jstickers.isEmpty()) {
-        throw tr("не найдены стикеры в стикерпаке '%1'").arg(pack);
+        throw tr("stickers not found in stickerpack '%1'").arg(pack);
     }
     auto t = m_dbmanager->startTransaction();
     QMap<QString, Sticker> stickers;
@@ -100,7 +100,7 @@ QString ArchiveManager::importPack(const QString& packname)
                 stickers[code].type = type;
                 auto add_result = m_dbmanager->addSticker(stickers[code], update);
                 if (!add_result && !update && !asked) {
-                    update = QMessageBox::question(nullptr, tr("Обновлять стикеры?"), tr("В импортируемом стикерпаке обнаружен дубль стикера (в импортируемом паке '%1'). Заменять уже существующие в вашей коллекции стикеры с таким кодом? ВНИМАНИЕ: ваши описания стикеров и теги будут заменены таковыми из импортируемого стикерпака.").arg(stickers[code].description)) == QMessageBox::Yes;
+                    update = QMessageBox::question(nullptr, tr("Update stickers?"), tr("Found a duplicate sticker in the stickerpack '%1' that's being imported. Replace all existing stickers with the imported ones? WARNING: your stickers descriptions and tags will be replaced with those from the stickerpack you're importing.").arg(stickers[code].description)) == QMessageBox::Yes;
                     if (update) {
                         add_result = m_dbmanager->addSticker(stickers[code], update);
                     }
@@ -112,7 +112,7 @@ QString ArchiveManager::importPack(const QString& packname)
         }
     }
     if (!result) {
-        QMessageBox::warning(nullptr, tr("Внимание"), tr("Некоторые стикеры не были добавлены, потому что они уже присутствуют в других стикерпаках."));
+        QMessageBox::warning(nullptr, tr("Warning"), tr("Some stickers were skipped because they already present in other stickerpacks."));
     }
     return pack;
 }

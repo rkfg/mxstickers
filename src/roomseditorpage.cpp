@@ -9,13 +9,13 @@ RoomsEditorPage::RoomsEditorPage(QWidget* parent)
 {
     ui->setupUi(this);
     ui->tw_rooms->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tw_rooms->setHorizontalHeaderLabels({ "Название", "Адрес" });
+    ui->tw_rooms->setHorizontalHeaderLabels({ tr("Name"), tr("Address") });
     connect(ui->b_add, &QPushButton::clicked, [=] {
         ui->tw_rooms->insertRow(ui->tw_rooms->rowCount());
     });
     connect(ui->b_del, &QPushButton::clicked, [=] {
         if (ui->tw_rooms->selectedItems().empty()) {
-            QMessageBox::critical(this, "Ошибка", "Выберите комнату для удаления.");
+            QMessageBox::critical(this, tr("Error"), tr("Choose room to delete."));
             return;
         }
         ui->tw_rooms->removeRow(ui->tw_rooms->selectedItems()[0]->row());
@@ -38,7 +38,7 @@ QList<Room> RoomsEditorPage::rooms() const
     QList<Room> result;
     for (int i = 0; i < ui->tw_rooms->rowCount(); ++i) {
         if (ui->tw_rooms->item(i, 0) && ui->tw_rooms->item(i, 1)) {
-            result.append({ getItemText(ui->tw_rooms->item(i, 1)), getItemText(ui->tw_rooms->item(i, 0)) });
+            result.append({ getItemText(ui->tw_rooms->item(i, 1)), getItemText(ui->tw_rooms->item(i, 0)), "" });
         }
     }
     return result;

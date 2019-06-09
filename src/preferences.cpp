@@ -9,10 +9,8 @@ Preferences::Preferences(QSettings* settings, QWidget* parent)
     , m_rooms_editor_page(new RoomsEditorPage)
 {
     ui->setupUi(this);
-    ui->lw_pages->addItem(new QListWidgetItem(QIcon(":/res/icons/user-identity.png"), "Токен доступа"));
-    ui->lw_pages->addItem(new QListWidgetItem(QIcon(":/res/icons/telepathy-kde.png"), "Комнаты"));
+    ui->lw_pages->addItem(new QListWidgetItem(QIcon(":/res/icons/user-identity.png"), tr("Access token")));
     ui->sw_content->addWidget(m_access_token_page);
-    ui->sw_content->addWidget(m_rooms_editor_page);
     connect(ui->lw_pages, &QListWidget::currentRowChanged, ui->sw_content, &QStackedWidget::setCurrentIndex);
     ui->lw_pages->setCurrentRow(0);
 }
@@ -22,7 +20,7 @@ QList<Room> Preferences::loadRooms()
     m_settings->beginGroup("matrix/rooms");
     QList<Room> rooms;
     for (auto& r : m_settings->childKeys()) {
-        rooms.append({ r, m_settings->value(r).toString() });
+        rooms.append({ r, m_settings->value(r).toString(), "" });
     }
     m_settings->endGroup();
     return rooms;

@@ -17,7 +17,7 @@ struct Room {
             return name;
         }
         if (!creator.isEmpty()) {
-            return QObject::tr("Чат с %1").arg(creator);
+            return QObject::tr("Chat with %1").arg(creator);
         }
         return address;
     }

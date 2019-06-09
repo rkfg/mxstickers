@@ -60,6 +60,9 @@ FORMS += \
     ui/roomseditorpage.ui \
     ui/tageditor.ui
 
+TRANSLATIONS = src/i18n/mxs_en.ts \
+               src/i18n/mxs_ru.ts
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

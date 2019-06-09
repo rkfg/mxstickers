@@ -9,5 +9,7 @@
         <file>icons/document-edit.png</file>
         <file>icons/document-import.png</file>
         <file>icons/document-export.png</file>
+        <file>i18n/mxs_en.qm</file>
+        <file>i18n/mxs_ru.qm</file>
     </qresource>
 </RCC>
