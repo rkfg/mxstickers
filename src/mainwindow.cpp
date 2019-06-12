@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget* parent)
     , m_matrix(new MatrixAPI(*m_network, this))
 {
     auto pack = m_settings->value("current_pack", "").toString();
-    auto room = m_settings->value("current_room", "").toString();
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), QApplication::screens().first()->availableGeometry()));
     ui->tableWidget->setHorizontalHeaderLabels({ tr("Image"), tr("Name"), tr("Server"), tr("Code"), tr("Type") });
@@ -47,8 +46,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::stickerRenamed);
     connect(ui->le_filter, &QLineEdit::textChanged, this, &MainWindow::filterStickers);
     connect(ui->cb_global_search, &QCheckBox::clicked, this, &MainWindow::reloadStickers);
-    connect(ui->cb_rooms, &QComboBox::currentTextChanged, [=](const QString& text) {
-        m_settings->setValue("current_room", text);
+    connect(ui->cb_rooms, qOverload<int>(&QComboBox::currentIndexChanged), [=](int idx) {
+        m_settings->setValue("current_room", ui->cb_rooms->currentData().toString());
     });
     m_pack_menu->addAction(QIcon(":/res/icons/list-add.png"), tr("Create stickerpack"), this, &MainWindow::createPack);
     m_pack_menu->addAction(QIcon(":/res/icons/list-remove.png"), tr("Remove stickerpack"), this, &MainWindow::removePack);
@@ -85,9 +84,6 @@ MainWindow::MainWindow(QWidget* parent)
     listPacks();
     if (!pack.isEmpty()) {
         ui->cb_stickerpack->setCurrentText(pack);
-    }
-    if (!room.isEmpty()) {
-        ui->cb_rooms->setCurrentText(room);
     }
     updateMatrixParams();
     connect(m_preferences_dialog, &Preferences::settingsUpdated, this, &MainWindow::updateMatrixParams);
@@ -605,8 +601,12 @@ void MainWindow::importPack()
 void MainWindow::sync(MXSync sync)
 {
     ui->cb_rooms->clear();
+    auto room = m_settings->value("current_room", "").toString();
     for (auto& r : sync.rooms) {
         ui->cb_rooms->addItem(r.title(), r.address);
+        if (room == r.address) {
+            ui->cb_rooms->setCurrentIndex(ui->cb_rooms->count() - 1);
+        }
     }
 }
 
